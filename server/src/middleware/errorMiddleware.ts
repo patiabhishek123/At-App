@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 export function errorMiddleware(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
   const message = err instanceof Error ? err.message : 'Internal server error';
 
-  if (message === 'User already exists') {
+  if (message === 'Student already exists') {
     res.status(409).json({ message });
     return;
   }

@@ -3,8 +3,8 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 
 type TokenPayload = {
-  userId: string;
-  email: string;
+  studentId: string;
+  rollNo: string;
 };
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
@@ -18,7 +18,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 
   try {
     const payload = jwt.verify(token, env.jwtSecret) as TokenPayload;
-    req.user = { id: payload.userId, email: payload.email };
+    req.user = { id: payload.studentId, rollNo: payload.rollNo };
     next();
   } catch {
     res.status(401).json({ message: 'Invalid token' });
