@@ -70,3 +70,18 @@ export async function createSession(subjectId: string, teacherId: string, sessio
 
   return result.rows[0];
 }
+
+export async function deactivateSession(sessionId: string): Promise<Session | null> {
+  const result = await pool.query<Session>(
+    `
+      UPDATE sessions
+      SET is_active = FALSE,
+          end_time = COALESCE(end_time, NOW())
+      WHERE id = $1 AND is_active = TRUE
+      RETURNING id, subject_id, teacher_id, start_time, end_time, is_active, session_token
+    `,
+    [sessionId]
+  );
+
+  return result.rows[0] ?? null;
+}
