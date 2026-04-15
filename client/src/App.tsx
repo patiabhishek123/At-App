@@ -22,12 +22,31 @@ type AttendanceMarkResponse = {
   message?: string
 }
 
+type StartClassResponse = {
+  session?: {
+    id: string
+    session_token: string
+  }
+  message?: string
+}
+
 type SessionEventPayload = {
   type: 'new_session' | 'session.started'
   sessionId?: string
   sessionToken?: string
   session_token?: string
   validitySeconds?: number
+}
+
+type AttendanceRealtimePayload = {
+  type: 'attendance.marked'
+  sessionId: string
+  attendanceCount: number
+  student: {
+    id: string
+    name: string
+    roll_no: string
+  }
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000/api'
@@ -69,6 +88,46 @@ function parseSessionEvent(payload: unknown): SessionEventPayload | null {
   }
 }
 
+function parseAttendanceRealtimeEvent(payload: unknown): AttendanceRealtimePayload | null {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const candidate = payload as Record<string, unknown>
+  if (candidate.type !== 'attendance.marked') {
+    return null
+  }
+
+  if (
+    typeof candidate.sessionId !== 'string' ||
+    typeof candidate.attendanceCount !== 'number' ||
+    !candidate.student ||
+    typeof candidate.student !== 'object'
+  ) {
+    return null
+  }
+
+  const student = candidate.student as Record<string, unknown>
+  if (
+    typeof student.id !== 'string' ||
+    typeof student.name !== 'string' ||
+    typeof student.roll_no !== 'string'
+  ) {
+    return null
+  }
+
+  return {
+    type: 'attendance.marked',
+    sessionId: candidate.sessionId,
+    attendanceCount: candidate.attendanceCount,
+    student: {
+      id: student.id,
+      name: student.name,
+      roll_no: student.roll_no
+    }
+  }
+}
+
 function App() {
   const [role, setRole] = useState<Role>('student')
   const [rollNo, setRollNo] = useState('')
@@ -84,6 +143,12 @@ function App() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [markingAttendance, setMarkingAttendance] = useState(false)
   const [attendanceMessage, setAttendanceMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [teacherSubjectId, setTeacherSubjectId] = useState('')
+  const [startingClass, setStartingClass] = useState(false)
+  const [teacherMessage, setTeacherMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [teacherSessionId, setTeacherSessionId] = useState<string | null>(null)
+  const [teacherAttendanceCount, setTeacherAttendanceCount] = useState(0)
+  const [teacherAttendanceList, setTeacherAttendanceList] = useState<Array<{ id: string; name: string; roll_no: string }>>([])
 
   const dashboardTitle = useMemo(() => {
     if (!session) {
@@ -122,30 +187,42 @@ function App() {
         setMessages((current) => [message, ...current].slice(0, 25))
 
         const event = parseSessionEvent(message.payload)
-        if (!event) {
+        if (event) {
+          const token = event.sessionToken ?? event.session_token
+          if (token) {
+            setActiveSessionToken(token)
+            setAttendanceMessage(null)
+          }
+
+          setActiveSessionId(event.sessionId ?? null)
+
+          const timeoutSeconds = event.validitySeconds ?? 30
+          window.setTimeout(() => {
+            setActiveSessionToken((current) => (current === token ? null : current))
+            setActiveSessionId((current) => (current === (event.sessionId ?? null) ? null : current))
+          }, timeoutSeconds * 1000)
           return
         }
 
-        const token = event.sessionToken ?? event.session_token
-        if (token) {
-          setActiveSessionToken(token)
-          setAttendanceMessage(null)
+        const attendanceEvent = parseAttendanceRealtimeEvent(message.payload)
+        if (attendanceEvent && attendanceEvent.sessionId === teacherSessionId) {
+          setTeacherAttendanceCount(attendanceEvent.attendanceCount)
+          setTeacherAttendanceList((current) => {
+            const exists = current.some((item) => item.id === attendanceEvent.student.id)
+            if (exists) {
+              return current
+            }
+
+            return [...current, attendanceEvent.student]
+          })
         }
-
-        setActiveSessionId(event.sessionId ?? null)
-
-        const timeoutSeconds = event.validitySeconds ?? 30
-        window.setTimeout(() => {
-          setActiveSessionToken((current) => (current === token ? null : current))
-          setActiveSessionId((current) => (current === (event.sessionId ?? null) ? null : current))
-        }, timeoutSeconds * 1000)
       }
     })
 
     return () => {
       wsClient.disconnect()
     }
-  }, [session])
+  }, [session, teacherSessionId])
 
   async function handleCredentialLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -214,6 +291,51 @@ function App() {
     setActiveSessionId(null)
     setActiveSessionToken(null)
     setAttendanceMessage(null)
+    setTeacherSessionId(null)
+    setTeacherAttendanceCount(0)
+    setTeacherAttendanceList([])
+    setTeacherMessage(null)
+    setTeacherSubjectId('')
+  }
+
+  async function handleStartClass(): Promise<void> {
+    if (!session || !teacherSubjectId.trim()) {
+      setTeacherMessage({ type: 'error', text: 'subject_id is required' })
+      return
+    }
+
+    setStartingClass(true)
+    setTeacherMessage(null)
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/sessions/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.token}`
+        },
+        body: JSON.stringify({
+          subject_id: teacherSubjectId.trim()
+        })
+      })
+
+      const data = (await response.json()) as StartClassResponse
+      if (!response.ok || !data.session) {
+        throw new Error(data.message ?? 'Unable to start class')
+      }
+
+      setTeacherSessionId(data.session.id)
+      setTeacherAttendanceCount(0)
+      setTeacherAttendanceList([])
+      setTeacherMessage({ type: 'success', text: `Class started. Session: ${data.session.id}` })
+    } catch (err) {
+      setTeacherMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Unable to start class'
+      })
+    } finally {
+      setStartingClass(false)
+    }
   }
 
   async function handleMarkAttendance(): Promise<void> {
@@ -368,8 +490,45 @@ function App() {
 
         {session.role === 'teacher' && (
           <section className="card">
-            <h2>Teacher feed</h2>
-            <p className="subtle">Monitor live acknowledgements and session status.</p>
+            <h2>Teacher dashboard</h2>
+            <div className="field">
+              <span>Subject ID</span>
+              <input
+                type="text"
+                value={teacherSubjectId}
+                onChange={(event) => setTeacherSubjectId(event.target.value)}
+                placeholder="Enter subject_id"
+              />
+            </div>
+            <button className="start-class-btn" onClick={handleStartClass} disabled={startingClass}>
+              {startingClass ? 'Starting...' : 'Start Class'}
+            </button>
+
+            {teacherMessage && (
+              <p className={teacherMessage.type === 'success' ? 'success' : 'error'}>{teacherMessage.text}</p>
+            )}
+
+            <div className="teacher-live-grid">
+              <div className="status-box">
+                <span>Live Attendance Count</span>
+                <strong>{teacherAttendanceCount}</strong>
+              </div>
+              <div className="status-box">
+                <span>Active Session</span>
+                <strong>{teacherSessionId ?? 'Not started'}</strong>
+              </div>
+            </div>
+
+            <h3 className="list-title">Live Present List</h3>
+            <ul className="feed">
+              {teacherAttendanceList.length === 0 && <li className="subtle">No students marked yet.</li>}
+              {teacherAttendanceList.map((student) => (
+                <li key={student.id}>
+                  <span>{student.roll_no}</span>
+                  <code>{student.name}</code>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 

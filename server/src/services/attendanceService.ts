@@ -2,12 +2,15 @@ import { isIP } from 'node:net';
 import { env } from '../config/env';
 import {
   AttendanceRecord,
+  countMarkedAttendanceBySession,
   createAttendanceRecord,
   deactivateSession,
   findAttendanceBySessionAndStudent,
   findSessionAttendanceSubnet,
+  findStudentById,
   findSessionByToken
 } from '../models/sessionModel';
+import { broadcastAttendanceUpdateToTeachers } from '../ws/socketServer';
 
 export type MarkAttendanceResult = {
   attendance: AttendanceRecord;
@@ -89,6 +92,16 @@ export async function markAttendance(
       alreadyMarked: true,
       message: 'Already marked'
     };
+  }
+
+  const student = await findStudentById(studentId);
+  if (student) {
+    const attendanceCount = await countMarkedAttendanceBySession(session.id);
+    broadcastAttendanceUpdateToTeachers({
+      sessionId: session.id,
+      attendanceCount,
+      student
+    });
   }
 
   return {

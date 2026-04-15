@@ -32,6 +32,12 @@ export interface SessionAttendanceEntry {
   marked_at: Date | null;
 }
 
+export interface StudentSummary {
+  id: string;
+  name: string;
+  roll_no: string;
+}
+
 export async function ensureSessionTables(): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS teachers (
@@ -235,4 +241,31 @@ export async function listSessionAttendance(sessionId: string): Promise<SessionA
   );
 
   return result.rows;
+}
+
+export async function findStudentById(studentId: string): Promise<StudentSummary | null> {
+  const result = await pool.query<StudentSummary>(
+    `
+      SELECT id, name, roll_no
+      FROM students
+      WHERE id = $1
+      LIMIT 1
+    `,
+    [studentId]
+  );
+
+  return result.rows[0] ?? null;
+}
+
+export async function countMarkedAttendanceBySession(sessionId: string): Promise<number> {
+  const result = await pool.query<{ total: string }>(
+    `
+      SELECT COUNT(*)::TEXT AS total
+      FROM attendance
+      WHERE session_id = $1
+    `,
+    [sessionId]
+  );
+
+  return Number(result.rows[0]?.total ?? '0');
 }

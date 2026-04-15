@@ -17,6 +17,8 @@ type WsUser = {
 };
 
 const connectedStudents = new Map<string, WebSocket>();
+const connectedTeachers = new Map<string, Set<WebSocket>>();
+const connectedAdmins = new Set<WebSocket>();
 let websocketServer: WebSocketServer | null = null;
 
 function parseToken(req: IncomingMessage): string | null {
@@ -75,6 +77,24 @@ function removeStudentSocket(studentId: string, socket: WebSocket): void {
   }
 }
 
+function registerTeacherSocket(teacherId: string, socket: WebSocket): void {
+  const sockets = connectedTeachers.get(teacherId) ?? new Set<WebSocket>();
+  sockets.add(socket);
+  connectedTeachers.set(teacherId, sockets);
+}
+
+function removeTeacherSocket(teacherId: string, socket: WebSocket): void {
+  const sockets = connectedTeachers.get(teacherId);
+  if (!sockets) {
+    return;
+  }
+
+  sockets.delete(socket);
+  if (sockets.size === 0) {
+    connectedTeachers.delete(teacherId);
+  }
+}
+
 export function initializeWebSocketServer(server: Server): void {
   if (websocketServer) {
     return;
@@ -97,6 +117,14 @@ export function initializeWebSocketServer(server: Server): void {
       registerStudentSocket(user.userId, socket);
     }
 
+    if (user.role === 'teacher') {
+      registerTeacherSocket(user.userId, socket);
+    }
+
+    if (user.role === 'admin') {
+      connectedAdmins.add(socket);
+    }
+
     socket.send(
       JSON.stringify({
         type: 'ws.connected',
@@ -109,6 +137,14 @@ export function initializeWebSocketServer(server: Server): void {
     socket.on('close', () => {
       if (user.role === 'student') {
         removeStudentSocket(user.userId, socket);
+      }
+
+      if (user.role === 'teacher') {
+        removeTeacherSocket(user.userId, socket);
+      }
+
+      if (user.role === 'admin') {
+        connectedAdmins.delete(socket);
       }
     });
   });
@@ -128,5 +164,46 @@ export function broadcastSessionTokenToStudents(sessionToken: string, sessionId:
     }
 
     connectedStudents.delete(studentId);
+  }
+}
+
+export function broadcastAttendanceUpdateToTeachers(event: {
+  sessionId: string;
+  attendanceCount: number;
+  student: {
+    id: string;
+    name: string;
+    roll_no: string;
+  };
+}): void {
+  const payload = JSON.stringify({
+    type: 'attendance.marked',
+    sessionId: event.sessionId,
+    attendanceCount: event.attendanceCount,
+    student: event.student
+  });
+
+  for (const [teacherId, sockets] of connectedTeachers.entries()) {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(payload);
+        continue;
+      }
+
+      sockets.delete(socket);
+    }
+
+    if (sockets.size === 0) {
+      connectedTeachers.delete(teacherId);
+    }
+  }
+
+  for (const socket of connectedAdmins) {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(payload);
+      continue;
+    }
+
+    connectedAdmins.delete(socket);
   }
 }
