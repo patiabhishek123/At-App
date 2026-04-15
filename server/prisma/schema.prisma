@@ -6,52 +6,95 @@ datasource db {
   provider = "postgresql"
 }
 
+model Branch {
+  id       BigInt     @id @default(autoincrement())
+  name     String     @unique @db.VarChar(120)
+  students Student[]
+  subjects Subject[]
+
+  @@map("branches")
+}
+
+model Year {
+  id       BigInt     @id @default(autoincrement())
+  yearNumber Int      @map("year_number") @db.SmallInt
+  students Student[]
+  subjects Subject[]
+
+  @@unique([yearNumber])
+  @@map("years")
+}
+
 model Student {
   id           BigInt       @id @default(autoincrement())
   name         String       @db.VarChar(120)
   rollNo       String       @unique(map: "students_roll_no_key") @map("roll_no") @db.VarChar(50)
   passwordHash String       @map("password_hash")
+  branchId     BigInt       @map("branch_id")
+  yearId       BigInt       @map("year_id")
+
+  branch       Branch       @relation(fields: [branchId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  year         Year         @relation(fields: [yearId], references: [id], onUpdate: Cascade, onDelete: Restrict)
   attendance   Attendance[]
 
+  @@index([branchId, yearId], map: "idx_students_branch_year")
   @@map("students")
 }
 
 model Teacher {
-  id       BigInt    @id @default(autoincrement())
-  name     String    @db.VarChar(120)
-  subject  String?   @db.VarChar(120)
-  subjects Subject[]
-  sessions Session[]
+  id               BigInt           @id @default(autoincrement())
+  name             String           @db.VarChar(120)
+  teacherSubjects  TeacherSubject[]
+  sessions         Session[]
 
   @@map("teachers")
 }
 
 model Subject {
-  id        BigInt   @id @default(autoincrement())
-  name      String   @db.VarChar(120)
-  teacherId BigInt   @map("teacher_id")
-  teacher   Teacher  @relation(fields: [teacherId], references: [id], onUpdate: Cascade, onDelete: Restrict)
-  sessions  Session[]
+  id               BigInt           @id @default(autoincrement())
+  name             String           @db.VarChar(120)
+  branchId         BigInt           @map("branch_id")
+  yearId           BigInt           @map("year_id")
 
-  @@index([teacherId], map: "idx_subjects_teacher_id")
+  branch           Branch           @relation(fields: [branchId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  year             Year             @relation(fields: [yearId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  teacherSubjects  TeacherSubject[]
+  sessions         Session[]
+
+  @@unique([branchId, yearId, name], map: "uq_subject_branch_year_name")
+  @@index([branchId, yearId], map: "idx_subjects_branch_year")
   @@map("subjects")
+}
+
+model TeacherSubject {
+  id        BigInt   @id @default(autoincrement())
+  teacherId BigInt   @map("teacher_id")
+  subjectId BigInt   @map("subject_id")
+
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@unique([teacherId, subjectId], map: "uq_teacher_subject")
+  @@index([teacherId], map: "idx_teacher_subjects_teacher_id")
+  @@index([subjectId], map: "idx_teacher_subjects_subject_id")
+  @@map("teacher_subjects")
 }
 
 model Session {
   id           BigInt       @id @default(autoincrement())
   subjectId    BigInt       @map("subject_id")
-  teacherId    BigInt       @map("teacher_id")
   startTime    DateTime     @map("start_time") @db.Timestamptz(6)
   endTime      DateTime?    @map("end_time") @db.Timestamptz(6)
   isActive     Boolean      @default(true) @map("is_active")
   sessionToken String       @unique(map: "sessions_session_token_key") @map("session_token") @db.VarChar(128)
+  createdByTeacherId BigInt  @map("created_by_teacher_id")
 
   subject      Subject      @relation(fields: [subjectId], references: [id], onUpdate: Cascade, onDelete: Restrict)
-  teacher      Teacher      @relation(fields: [teacherId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  createdByTeacher Teacher  @relation(fields: [createdByTeacherId], references: [id], onUpdate: Cascade, onDelete: Restrict)
   attendance   Attendance[]
 
   @@index([subjectId], map: "idx_sessions_subject_id")
-  @@index([teacherId], map: "idx_sessions_teacher_id")
+  @@index([createdByTeacherId], map: "idx_sessions_created_by_teacher_id")
   @@index([isActive, startTime(sort: Desc)], map: "idx_sessions_active_start_time")
   @@map("sessions")
 }
@@ -62,6 +105,8 @@ model Attendance {
   studentId BigInt           @map("student_id")
   timestamp DateTime         @default(now()) @db.Timestamptz(6)
   status    AttendanceStatus
+  studentIp String?          @map("student_ip") @db.Inet
+  subnet    String?          @db.VarChar(50)
 
   session   Session          @relation(fields: [sessionId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   student   Student          @relation(fields: [studentId], references: [id], onUpdate: Cascade, onDelete: Cascade)

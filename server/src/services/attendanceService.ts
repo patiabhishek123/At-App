@@ -2,13 +2,15 @@ import { isIP } from 'node:net';
 import { env } from '../config/env';
 import {
   AttendanceRecord,
+  checkStudentEligibility,
   countMarkedAttendanceBySession,
   createAttendanceRecord,
   deactivateSession,
   findAttendanceBySessionAndStudent,
   findSessionAttendanceSubnet,
   findStudentById,
-  findSessionByToken
+  findSessionByToken,
+  getSubjectWithHierarchy
 } from '../models/sessionModel';
 import { broadcastAttendanceUpdateToTeachers } from '../ws/socketServer';
 
@@ -70,6 +72,12 @@ export async function markAttendance(
   if (session.elapsed_seconds > env.sessionValiditySeconds) {
     await deactivateSession(session.id);
     throw new Error('Session expired');
+  }
+
+  // Check student eligibility based on branch and year
+  const eligibility = await checkStudentEligibility(studentId, session.subject_id);
+  if (!eligibility.eligible) {
+    throw new Error(eligibility.reason || 'Student not eligible for this session');
   }
 
   const studentIp = normalizeIp(rawStudentIp.trim());

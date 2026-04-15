@@ -7,7 +7,8 @@ import {
   findTeacherById,
   isSubjectAssignedToTeacher,
   listSessionAttendance,
-  Session
+  Session,
+  getSubjectWithHierarchy
 } from '../models/sessionModel';
 import { broadcastSessionTokenToStudents } from '../ws/socketServer';
 import { UserRole } from '../middleware/roleMiddleware';
@@ -22,7 +23,7 @@ function scheduleSessionExpiry(sessionId: string): void {
   timer.unref();
 }
 
-export async function startClassSession(teacherId: string, subjectId: string): Promise<Session> {
+export async function startClassSession(teacherId: string, subjectId: string): Promise<Session & { branch_name: string; year_number: number }> {
   const teacherExists = await findTeacherById(teacherId);
   if (!teacherExists) {
     throw new Error('Teacher not found');
@@ -33,12 +34,21 @@ export async function startClassSession(teacherId: string, subjectId: string): P
     throw new Error('Subject not assigned to teacher');
   }
 
+  const subjectWithHierarchy = await getSubjectWithHierarchy(subjectId);
+  if (!subjectWithHierarchy) {
+    throw new Error('Subject not found');
+  }
+
   const sessionToken = randomUUID();
   const session = await createSession(subjectId, teacherId, sessionToken);
   scheduleSessionExpiry(session.id);
   broadcastSessionTokenToStudents(session.session_token, session.id);
 
-  return session;
+  return {
+    ...session,
+    branch_name: subjectWithHierarchy.branch_name,
+    year_number: subjectWithHierarchy.year_number
+  };
 }
 
 export async function getSessionAttendance(
@@ -46,7 +56,7 @@ export async function getSessionAttendance(
   requesterId: string,
   requesterRole: UserRole
 ): Promise<{
-  session: Pick<Session, 'id' | 'subject_id' | 'teacher_id' | 'start_time' | 'end_time' | 'is_active'>;
+  session: Pick<Session, 'id' | 'subject_id' | 'created_by_teacher_id' | 'start_time' | 'end_time' | 'is_active'>;
   students: Awaited<ReturnType<typeof listSessionAttendance>>;
 }> {
   const session = await findSessionById(sessionId);
@@ -55,7 +65,7 @@ export async function getSessionAttendance(
     throw new Error('Session not found');
   }
 
-  if (requesterRole === 'teacher' && session.teacher_id !== requesterId) {
+  if (requesterRole === 'teacher' && session.created_by_teacher_id !== requesterId) {
     throw new Error('Forbidden session access');
   }
 
@@ -65,7 +75,7 @@ export async function getSessionAttendance(
     session: {
       id: session.id,
       subject_id: session.subject_id,
-      teacher_id: session.teacher_id,
+      created_by_teacher_id: session.created_by_teacher_id,
       start_time: session.start_time,
       end_time: session.end_time,
       is_active: session.is_active
