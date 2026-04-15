@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Student {
+  id           BigInt       @id @default(autoincrement())
+  name         String       @db.VarChar(120)
+  rollNo       String       @unique(map: "students_roll_no_key") @map("roll_no") @db.VarChar(50)
+  passwordHash String       @map("password_hash")
+  attendance   Attendance[]
+
+  @@map("students")
+}
+
+model Teacher {
+  id       BigInt    @id @default(autoincrement())
+  name     String    @db.VarChar(120)
+  subject  String?   @db.VarChar(120)
+  subjects Subject[]
+  sessions Session[]
+
+  @@map("teachers")
+}
+
+model Subject {
+  id        BigInt   @id @default(autoincrement())
+  name      String   @db.VarChar(120)
+  teacherId BigInt   @map("teacher_id")
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  sessions  Session[]
+
+  @@index([teacherId], map: "idx_subjects_teacher_id")
+  @@map("subjects")
+}
+
+model Session {
+  id           BigInt       @id @default(autoincrement())
+  subjectId    BigInt       @map("subject_id")
+  teacherId    BigInt       @map("teacher_id")
+  startTime    DateTime     @map("start_time") @db.Timestamptz(6)
+  endTime      DateTime?    @map("end_time") @db.Timestamptz(6)
+  isActive     Boolean      @default(true) @map("is_active")
+  sessionToken String       @unique(map: "sessions_session_token_key") @map("session_token") @db.VarChar(128)
+
+  subject      Subject      @relation(fields: [subjectId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  teacher      Teacher      @relation(fields: [teacherId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  attendance   Attendance[]
+
+  @@index([subjectId], map: "idx_sessions_subject_id")
+  @@index([teacherId], map: "idx_sessions_teacher_id")
+  @@index([isActive, startTime(sort: Desc)], map: "idx_sessions_active_start_time")
+  @@map("sessions")
+}
+
+model Attendance {
+  id        BigInt           @id @default(autoincrement())
+  sessionId BigInt           @map("session_id")
+  studentId BigInt           @map("student_id")
+  timestamp DateTime         @default(now()) @db.Timestamptz(6)
+  status    AttendanceStatus
+
+  session   Session          @relation(fields: [sessionId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  student   Student          @relation(fields: [studentId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@unique([sessionId, studentId], map: "uq_attendance_session_student")
+  @@index([sessionId], map: "idx_attendance_session_id")
+  @@index([studentId], map: "idx_attendance_student_id")
+  @@index([timestamp(sort: Desc)], map: "idx_attendance_timestamp")
+  @@index([sessionId, status], map: "idx_attendance_session_status")
+  @@map("attendance")
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  excused
+}
