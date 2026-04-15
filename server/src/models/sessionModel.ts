@@ -176,3 +176,20 @@ export async function findSessionAttendanceSubnet(sessionId: string): Promise<st
 
   return result.rows[0]?.subnet ?? null;
 }
+
+export async function findAttendanceBySessionAndStudent(
+  sessionId: string,
+  studentId: string
+): Promise<AttendanceRecord | null> {
+  const result = await pool.query<AttendanceRecord>(
+    `
+      SELECT id, session_id, student_id, "timestamp", status, student_ip, subnet
+      FROM attendance
+      WHERE session_id = $1 AND student_id = $2
+      LIMIT 1
+    `,
+    [sessionId, studentId]
+  );
+
+  return result.rows[0] ?? null;
+}

@@ -4,9 +4,16 @@ import {
   AttendanceRecord,
   createAttendanceRecord,
   deactivateSession,
+  findAttendanceBySessionAndStudent,
   findSessionAttendanceSubnet,
   findSessionByToken
 } from '../models/sessionModel';
+
+export type MarkAttendanceResult = {
+  attendance: AttendanceRecord;
+  alreadyMarked: boolean;
+  message: string;
+};
 
 function normalizeIp(ip: string): string {
   if (ip === '::1') {
@@ -46,7 +53,7 @@ export async function markAttendance(
   studentId: string,
   sessionToken: string,
   rawStudentIp: string
-): Promise<AttendanceRecord> {
+): Promise<MarkAttendanceResult> {
   const session = await findSessionByToken(sessionToken);
 
   if (!session) {
@@ -72,8 +79,21 @@ export async function markAttendance(
 
   const record = await createAttendanceRecord(session.id, studentId, 'present', studentIp, subnet);
   if (!record) {
-    throw new Error('Attendance already marked');
+    const existing = await findAttendanceBySessionAndStudent(session.id, studentId);
+    if (!existing) {
+      throw new Error('Attendance already marked');
+    }
+
+    return {
+      attendance: existing,
+      alreadyMarked: true,
+      message: 'Already marked'
+    };
   }
 
-  return record;
+  return {
+    attendance: record,
+    alreadyMarked: false,
+    message: 'Attendance marked'
+  };
 }

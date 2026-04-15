@@ -36,11 +36,13 @@ export async function markAttendanceController(req: Request, res: Response, next
       return;
     }
 
-    const attendance = await markAttendance(studentId, sessionToken, studentIp);
+    const result = await markAttendance(studentId, sessionToken, studentIp);
 
-    res.status(201).json({
+    res.status(result.alreadyMarked ? 200 : 201).json({
       success: true,
-      attendance
+      message: result.message,
+      already_marked: result.alreadyMarked,
+      attendance: result.attendance
     });
   } catch (error) {
     next(error);
