@@ -16,6 +16,8 @@ export interface AttendanceRecord {
   student_id: string;
   timestamp: Date;
   status: 'present' | 'absent' | 'late' | 'excused';
+  student_ip: string;
+  subnet: string;
 }
 
 export interface SessionWithAge extends Session {
@@ -59,10 +61,15 @@ export async function ensureSessionTables(): Promise<void> {
       student_id UUID NOT NULL REFERENCES students(id) ON UPDATE CASCADE ON DELETE CASCADE,
       "timestamp" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       status VARCHAR(20) NOT NULL,
+      student_ip INET,
+      subnet TEXT,
       CONSTRAINT uq_attendance_session_student UNIQUE (session_id, student_id),
       CONSTRAINT chk_attendance_status CHECK (status IN ('present', 'absent', 'late', 'excused'))
     );
   `);
+
+  await pool.query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS student_ip INET');
+  await pool.query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS subnet TEXT');
 
   await pool.query('CREATE INDEX IF NOT EXISTS idx_subjects_teacher_id ON subjects(teacher_id)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_sessions_subject_id ON sessions(subject_id)');
@@ -138,17 +145,34 @@ export async function findSessionByToken(sessionToken: string): Promise<SessionW
 export async function createAttendanceRecord(
   sessionId: string,
   studentId: string,
-  status: AttendanceRecord['status']
+  status: AttendanceRecord['status'],
+  studentIp: string,
+  subnet: string
 ): Promise<AttendanceRecord | null> {
   const result = await pool.query<AttendanceRecord>(
     `
-      INSERT INTO attendance (session_id, student_id, "timestamp", status)
-      VALUES ($1, $2, NOW(), $3)
+      INSERT INTO attendance (session_id, student_id, "timestamp", status, student_ip, subnet)
+      VALUES ($1, $2, NOW(), $3, $4, $5)
       ON CONFLICT (session_id, student_id) DO NOTHING
-      RETURNING id, session_id, student_id, "timestamp", status
+      RETURNING id, session_id, student_id, "timestamp", status, student_ip, subnet
     `,
-    [sessionId, studentId, status]
+    [sessionId, studentId, status, studentIp, subnet]
   );
 
   return result.rows[0] ?? null;
+}
+
+export async function findSessionAttendanceSubnet(sessionId: string): Promise<string | null> {
+  const result = await pool.query<{ subnet: string | null }>(
+    `
+      SELECT subnet
+      FROM attendance
+      WHERE session_id = $1 AND subnet IS NOT NULL
+      ORDER BY "timestamp" ASC
+      LIMIT 1
+    `,
+    [sessionId]
+  );
+
+  return result.rows[0]?.subnet ?? null;
 }

@@ -38,5 +38,10 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     return;
   }
 
+  if (message === 'Invalid student IP' || message === 'Subnet mismatch') {
+    res.status(400).json({ success: false, message });
+    return;
+  }
+
   res.status(500).json({ success: false, message });
 }
