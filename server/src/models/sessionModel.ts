@@ -10,6 +10,18 @@ export interface Session {
   session_token: string;
 }
 
+export interface AttendanceRecord {
+  id: string;
+  session_id: string;
+  student_id: string;
+  timestamp: Date;
+  status: 'present' | 'absent' | 'late' | 'excused';
+}
+
+export interface SessionWithAge extends Session {
+  elapsed_seconds: number;
+}
+
 export async function ensureSessionTables(): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS teachers (
@@ -40,9 +52,24 @@ export async function ensureSessionTables(): Promise<void> {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS attendance (
+      id BIGSERIAL PRIMARY KEY,
+      session_id BIGINT NOT NULL REFERENCES sessions(id) ON UPDATE CASCADE ON DELETE CASCADE,
+      student_id UUID NOT NULL REFERENCES students(id) ON UPDATE CASCADE ON DELETE CASCADE,
+      "timestamp" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      status VARCHAR(20) NOT NULL,
+      CONSTRAINT uq_attendance_session_student UNIQUE (session_id, student_id),
+      CONSTRAINT chk_attendance_status CHECK (status IN ('present', 'absent', 'late', 'excused'))
+    );
+  `);
+
   await pool.query('CREATE INDEX IF NOT EXISTS idx_subjects_teacher_id ON subjects(teacher_id)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_sessions_subject_id ON sessions(subject_id)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_sessions_teacher_id ON sessions(teacher_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_attendance_session_id ON attendance(session_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance(student_id)');
 }
 
 export async function findTeacherById(teacherId: string): Promise<boolean> {
@@ -81,6 +108,46 @@ export async function deactivateSession(sessionId: string): Promise<Session | nu
       RETURNING id, subject_id, teacher_id, start_time, end_time, is_active, session_token
     `,
     [sessionId]
+  );
+
+  return result.rows[0] ?? null;
+}
+
+export async function findSessionByToken(sessionToken: string): Promise<SessionWithAge | null> {
+  const result = await pool.query<SessionWithAge>(
+    `
+      SELECT
+        id,
+        subject_id,
+        teacher_id,
+        start_time,
+        end_time,
+        is_active,
+        session_token,
+        EXTRACT(EPOCH FROM (NOW() - start_time))::INTEGER AS elapsed_seconds
+      FROM sessions
+      WHERE session_token = $1
+      LIMIT 1
+    `,
+    [sessionToken]
+  );
+
+  return result.rows[0] ?? null;
+}
+
+export async function createAttendanceRecord(
+  sessionId: string,
+  studentId: string,
+  status: AttendanceRecord['status']
+): Promise<AttendanceRecord | null> {
+  const result = await pool.query<AttendanceRecord>(
+    `
+      INSERT INTO attendance (session_id, student_id, "timestamp", status)
+      VALUES ($1, $2, NOW(), $3)
+      ON CONFLICT (session_id, student_id) DO NOTHING
+      RETURNING id, session_id, student_id, "timestamp", status
+    `,
+    [sessionId, studentId, status]
   );
 
   return result.rows[0] ?? null;

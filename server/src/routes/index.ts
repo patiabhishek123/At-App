@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { authorizeRoles } from '../middleware/roleMiddleware';
+import { attendanceRouter } from './attendanceRoutes';
 import { authRouter } from './authRoutes';
 import { sessionRouter } from './sessionRoutes';
 
@@ -11,6 +12,7 @@ router.get('/health', (_req, res) => {
 });
 
 router.use('/auth', authRouter);
+router.use('/attendance', attendanceRouter);
 router.use('/sessions', sessionRouter);
 
 router.get('/me', authMiddleware, (req, res) => {

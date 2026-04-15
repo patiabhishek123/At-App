@@ -4,24 +4,39 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
   const message = err instanceof Error ? err.message : 'Internal server error';
 
   if (message === 'Student already exists') {
-    res.status(409).json({ message });
+    res.status(409).json({ success: false, message });
     return;
   }
 
   if (message === 'Invalid credentials') {
-    res.status(401).json({ message });
+    res.status(401).json({ success: false, message });
     return;
   }
 
   if (message === 'Teacher not found') {
-    res.status(404).json({ message });
+    res.status(404).json({ success: false, message });
     return;
   }
 
   if (message === 'Subject not assigned to teacher') {
-    res.status(403).json({ message });
+    res.status(403).json({ success: false, message });
     return;
   }
 
-  res.status(500).json({ message });
+  if (message === 'Session not found') {
+    res.status(404).json({ success: false, message });
+    return;
+  }
+
+  if (message === 'Session is not active' || message === 'Session expired') {
+    res.status(400).json({ success: false, message });
+    return;
+  }
+
+  if (message === 'Attendance already marked') {
+    res.status(409).json({ success: false, message });
+    return;
+  }
+
+  res.status(500).json({ success: false, message });
 }
