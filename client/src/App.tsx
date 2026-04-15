@@ -17,6 +17,11 @@ type LoginResponse = {
   token: string
 }
 
+type AttendanceMarkResponse = {
+  success: boolean
+  message?: string
+}
+
 type SessionEventPayload = {
   type: 'new_session' | 'session.started'
   sessionId?: string
@@ -77,6 +82,8 @@ function App() {
   const [messages, setMessages] = useState<WsMessage[]>([])
   const [activeSessionToken, setActiveSessionToken] = useState<string | null>(null)
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
+  const [markingAttendance, setMarkingAttendance] = useState(false)
+  const [attendanceMessage, setAttendanceMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const dashboardTitle = useMemo(() => {
     if (!session) {
@@ -122,6 +129,7 @@ function App() {
         const token = event.sessionToken ?? event.session_token
         if (token) {
           setActiveSessionToken(token)
+          setAttendanceMessage(null)
         }
 
         setActiveSessionId(event.sessionId ?? null)
@@ -205,14 +213,47 @@ function App() {
     setPassword('')
     setActiveSessionId(null)
     setActiveSessionToken(null)
+    setAttendanceMessage(null)
   }
 
-  function handleMarkAttendance(): void {
-    if (!activeSessionToken) {
+  async function handleMarkAttendance(): Promise<void> {
+    if (!activeSessionToken || !session) {
       return
     }
 
-    window.alert(`Attendance request prepared for session token: ${activeSessionToken}`)
+    setMarkingAttendance(true)
+    setAttendanceMessage(null)
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance/mark`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.token}`
+        },
+        body: JSON.stringify({
+          session_token: activeSessionToken
+        })
+      })
+
+      const data = (await response.json()) as AttendanceMarkResponse
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message ?? 'Failed to mark attendance')
+      }
+
+      setAttendanceMessage({
+        type: 'success',
+        text: data.message ?? 'Attendance marked successfully'
+      })
+    } catch (err) {
+      setAttendanceMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to mark attendance'
+      })
+    } finally {
+      setMarkingAttendance(false)
+    }
   }
 
   if (!session) {
@@ -305,17 +346,22 @@ function App() {
 
         {session.role === 'student' && (
           <section className="card">
-            <h2>Student feed</h2>
-            <p className="subtle">Live attendance announcements appear below.</p>
+            <h2>Student dashboard</h2>
             {activeSessionToken ? (
               <div className="session-banner">
                 <p>
                   Active session {activeSessionId ? `(${activeSessionId})` : ''}
                 </p>
-                <button onClick={handleMarkAttendance}>Mark Attendance</button>
+                <button className="mark-present-btn" onClick={handleMarkAttendance} disabled={markingAttendance}>
+                  {markingAttendance ? 'Marking...' : 'Mark Present'}
+                </button>
               </div>
             ) : (
-              <p className="subtle">No active session right now.</p>
+              <p className="waiting">Waiting for session</p>
+            )}
+
+            {attendanceMessage && (
+              <p className={attendanceMessage.type === 'success' ? 'success' : 'error'}>{attendanceMessage.text}</p>
             )}
           </section>
         )}
