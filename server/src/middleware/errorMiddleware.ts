@@ -23,6 +23,11 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     return;
   }
 
+  if (message === 'Forbidden session access') {
+    res.status(403).json({ success: false, message });
+    return;
+  }
+
   if (message === 'Session not found') {
     res.status(404).json({ success: false, message });
     return;

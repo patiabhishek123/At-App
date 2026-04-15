@@ -24,6 +24,14 @@ export interface SessionWithAge extends Session {
   elapsed_seconds: number;
 }
 
+export interface SessionAttendanceEntry {
+  student_id: string;
+  name: string;
+  roll_no: string;
+  status: 'present' | 'absent' | 'late' | 'excused';
+  marked_at: Date | null;
+}
+
 export async function ensureSessionTables(): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS teachers (
@@ -103,6 +111,20 @@ export async function createSession(subjectId: string, teacherId: string, sessio
   );
 
   return result.rows[0];
+}
+
+export async function findSessionById(sessionId: string): Promise<Session | null> {
+  const result = await pool.query<Session>(
+    `
+      SELECT id, subject_id, teacher_id, start_time, end_time, is_active, session_token
+      FROM sessions
+      WHERE id = $1
+      LIMIT 1
+    `,
+    [sessionId]
+  );
+
+  return result.rows[0] ?? null;
 }
 
 export async function deactivateSession(sessionId: string): Promise<Session | null> {
@@ -192,4 +214,25 @@ export async function findAttendanceBySessionAndStudent(
   );
 
   return result.rows[0] ?? null;
+}
+
+export async function listSessionAttendance(sessionId: string): Promise<SessionAttendanceEntry[]> {
+  const result = await pool.query<SessionAttendanceEntry>(
+    `
+      SELECT
+        s.id AS student_id,
+        s.name,
+        s.roll_no,
+        COALESCE(a.status, 'absent') AS status,
+        a."timestamp" AS marked_at
+      FROM students s
+      LEFT JOIN attendance a
+        ON a.student_id = s.id
+       AND a.session_id = $1
+      ORDER BY s.roll_no ASC
+    `,
+    [sessionId]
+  );
+
+  return result.rows;
 }

@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { startClassSession } from '../services/sessionService';
+import { getSessionAttendance, startClassSession } from '../services/sessionService';
 
 export async function startSessionController(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -18,6 +18,34 @@ export async function startSessionController(req: Request, res: Response, next: 
 
     const session = await startClassSession(teacherId, String(subjectId));
     res.status(201).json({ session });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getSessionAttendanceController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const requesterId = req.user?.id;
+    const requesterRole = req.user?.role;
+    const { id: sessionId } = req.params as { id?: string };
+
+    if (!requesterId || !requesterRole) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    if (!sessionId) {
+      res.status(400).json({ success: false, message: 'session id is required' });
+      return;
+    }
+
+    const result = await getSessionAttendance(sessionId, requesterId, requesterRole);
+
+    res.status(200).json({
+      success: true,
+      session: result.session,
+      students: result.students
+    });
   } catch (error) {
     next(error);
   }
