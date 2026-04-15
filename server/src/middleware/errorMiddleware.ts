@@ -13,5 +13,15 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     return;
   }
 
+  if (message === 'Teacher not found') {
+    res.status(404).json({ message });
+    return;
+  }
+
+  if (message === 'Subject not assigned to teacher') {
+    res.status(403).json({ message });
+    return;
+  }
+
   res.status(500).json({ message });
 }

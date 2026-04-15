@@ -2,10 +2,12 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { createStudent, findStudentByRollNo } from '../models/userModel';
+import { UserRole } from '../middleware/roleMiddleware';
 
 type AuthPayload = {
   studentId: string;
   rollNo: string;
+  role: UserRole;
 };
 
 function createToken(payload: AuthPayload): string {
@@ -21,7 +23,7 @@ export async function register(name: string, rollNo: string, password: string): 
   const passwordHash = await bcrypt.hash(password, 10);
   const student = await createStudent(name, rollNo, passwordHash);
 
-  return createToken({ studentId: student.id, rollNo: student.roll_no });
+  return createToken({ studentId: student.id, rollNo: student.roll_no, role: 'student' });
 }
 
 export async function login(rollNo: string, password: string): Promise<string> {
@@ -35,5 +37,5 @@ export async function login(rollNo: string, password: string): Promise<string> {
     throw new Error('Invalid credentials');
   }
 
-  return createToken({ studentId: student.id, rollNo: student.roll_no });
+  return createToken({ studentId: student.id, rollNo: student.roll_no, role: 'student' });
 }

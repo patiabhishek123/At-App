@@ -1,12 +1,14 @@
 import { app } from './app';
 import { connectDb } from './config/db';
 import { env } from './config/env';
+import { ensureSessionTables } from './models/sessionModel';
 import { ensureStudentsTable } from './models/userModel';
 
 async function startServer(): Promise<void> {
   try {
     await connectDb();
     await ensureStudentsTable();
+    await ensureSessionTables();
 
     app.listen(env.port, () => {
       console.log(`Server running on port ${env.port}`);

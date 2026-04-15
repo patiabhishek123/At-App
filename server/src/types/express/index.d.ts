@@ -3,7 +3,8 @@ declare global {
     interface Request {
       user?: {
         id: string;
-        rollNo: string;
+        rollNo?: string;
+        role: 'student' | 'teacher' | 'admin';
       };
     }
   }
