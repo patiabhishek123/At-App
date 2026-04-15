@@ -7,6 +7,7 @@ import {
   isSubjectAssignedToTeacher,
   Session
 } from '../models/sessionModel';
+import { broadcastSessionTokenToStudents } from '../ws/socketServer';
 
 function scheduleSessionExpiry(sessionId: string): void {
   const timeoutMs = env.sessionValiditySeconds * 1000;
@@ -32,6 +33,7 @@ export async function startClassSession(teacherId: string, subjectId: string): P
   const sessionToken = randomUUID();
   const session = await createSession(subjectId, teacherId, sessionToken);
   scheduleSessionExpiry(session.id);
+  broadcastSessionTokenToStudents(session.session_token, session.id);
 
   return session;
 }
