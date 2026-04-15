@@ -17,6 +17,14 @@ type LoginResponse = {
   token: string
 }
 
+type SessionEventPayload = {
+  type: 'new_session' | 'session.started'
+  sessionId?: string
+  sessionToken?: string
+  session_token?: string
+  validitySeconds?: number
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000/api'
 const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:5000'
 
@@ -35,6 +43,27 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+function parseSessionEvent(payload: unknown): SessionEventPayload | null {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const candidate = payload as Record<string, unknown>
+  const type = candidate.type
+
+  if (type !== 'new_session' && type !== 'session.started') {
+    return null
+  }
+
+  return {
+    type,
+    sessionId: typeof candidate.sessionId === 'string' ? candidate.sessionId : undefined,
+    sessionToken: typeof candidate.sessionToken === 'string' ? candidate.sessionToken : undefined,
+    session_token: typeof candidate.session_token === 'string' ? candidate.session_token : undefined,
+    validitySeconds: typeof candidate.validitySeconds === 'number' ? candidate.validitySeconds : undefined
+  }
+}
+
 function App() {
   const [role, setRole] = useState<Role>('student')
   const [rollNo, setRollNo] = useState('')
@@ -46,6 +75,8 @@ function App() {
 
   const [socketState, setSocketState] = useState<'connecting' | 'open' | 'closed'>('closed')
   const [messages, setMessages] = useState<WsMessage[]>([])
+  const [activeSessionToken, setActiveSessionToken] = useState<string | null>(null)
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
 
   const dashboardTitle = useMemo(() => {
     if (!session) {
@@ -67,6 +98,8 @@ function App() {
     if (!session) {
       setSocketState('closed')
       setMessages([])
+      setActiveSessionId(null)
+      setActiveSessionToken(null)
       return
     }
 
@@ -80,6 +113,24 @@ function App() {
       onClose: () => setSocketState('closed'),
       onMessage: (message) => {
         setMessages((current) => [message, ...current].slice(0, 25))
+
+        const event = parseSessionEvent(message.payload)
+        if (!event) {
+          return
+        }
+
+        const token = event.sessionToken ?? event.session_token
+        if (token) {
+          setActiveSessionToken(token)
+        }
+
+        setActiveSessionId(event.sessionId ?? null)
+
+        const timeoutSeconds = event.validitySeconds ?? 30
+        window.setTimeout(() => {
+          setActiveSessionToken((current) => (current === token ? null : current))
+          setActiveSessionId((current) => (current === (event.sessionId ?? null) ? null : current))
+        }, timeoutSeconds * 1000)
       }
     })
 
@@ -152,6 +203,16 @@ function App() {
     setSession(null)
     setTokenInput('')
     setPassword('')
+    setActiveSessionId(null)
+    setActiveSessionToken(null)
+  }
+
+  function handleMarkAttendance(): void {
+    if (!activeSessionToken) {
+      return
+    }
+
+    window.alert(`Attendance request prepared for session token: ${activeSessionToken}`)
   }
 
   if (!session) {
@@ -246,6 +307,16 @@ function App() {
           <section className="card">
             <h2>Student feed</h2>
             <p className="subtle">Live attendance announcements appear below.</p>
+            {activeSessionToken ? (
+              <div className="session-banner">
+                <p>
+                  Active session {activeSessionId ? `(${activeSessionId})` : ''}
+                </p>
+                <button onClick={handleMarkAttendance}>Mark Attendance</button>
+              </div>
+            ) : (
+              <p className="subtle">No active session right now.</p>
+            )}
           </section>
         )}
 

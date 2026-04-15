@@ -56,6 +56,14 @@
   margin-top: 10px;
 }
 
+.session-banner {
+  margin-top: 12px;
+  border: 2px solid #000;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
 input,
 select,
 textarea,
