@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { authorizeRoles } from '../middleware/roleMiddleware';
 import {
+  addTeacherSubjectController,
   getStudentHistoryController,
   getStudentStatsController,
   getTeacherSubjectsController
@@ -36,6 +37,7 @@ router.get('/teacher/dashboard', authMiddleware, authorizeRoles('teacher'), (_re
 });
 
 router.get('/teacher/subjects', authMiddleware, authorizeRoles('teacher'), getTeacherSubjectsController);
+router.post('/teacher/subjects', authMiddleware, authorizeRoles('teacher'), addTeacherSubjectController);
 
 router.get('/admin/dashboard', authMiddleware, authorizeRoles('admin'), (_req, res) => {
   res.status(200).json({ message: 'Admin route accessed' });

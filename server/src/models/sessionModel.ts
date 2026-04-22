@@ -402,3 +402,41 @@ export async function getTeacherAssignedSubjects(teacherId: string): Promise<Sub
 
   return result.rows;
 }
+
+export async function createAndAssignSubjectToTeacher(
+  teacherId: string,
+  subjectName: string,
+  branchId: string,
+  yearId: string
+): Promise<SubjectWithHierarchy> {
+  const insertedSubject = await pool.query<{ id: string }>(
+    `
+      INSERT INTO subjects (name, branch_id, year_id)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (branch_id, year_id, name) DO UPDATE SET name = EXCLUDED.name
+      RETURNING id
+    `,
+    [subjectName, branchId, yearId]
+  );
+
+  const subjectId = insertedSubject.rows[0]?.id;
+  if (!subjectId) {
+    throw new Error('Failed to create subject');
+  }
+
+  await pool.query(
+    `
+      INSERT INTO teacher_subjects (teacher_id, subject_id)
+      VALUES ($1, $2)
+      ON CONFLICT (teacher_id, subject_id) DO NOTHING
+    `,
+    [teacherId, subjectId]
+  );
+
+  const subject = await getSubjectWithHierarchy(subjectId);
+  if (!subject) {
+    throw new Error('Failed to load created subject');
+  }
+
+  return subject;
+}

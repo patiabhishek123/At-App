@@ -6,8 +6,10 @@ import {
   getStudentStatsById
 } from '../models/dashboardModel';
 import {
+  createAndAssignSubjectToTeacher,
   deactivateSession,
   findSessionById,
+  findTeacherById,
   getTeacherAssignedSubjects,
   Session
 } from '../models/sessionModel';
@@ -24,6 +26,29 @@ export async function getStudentHistory(studentId: string) {
 
 export async function getTeacherSubjects(teacherId: string) {
   return getTeacherAssignedSubjects(teacherId);
+}
+
+export async function addTeacherSubject(
+  teacherId: string,
+  subjectName: string,
+  branchId: string,
+  yearId: string
+) {
+  const teacherExists = await findTeacherById(teacherId);
+  if (!teacherExists) {
+    throw new Error('Teacher not found');
+  }
+
+  const normalizedName = subjectName.trim();
+  if (!normalizedName) {
+    throw new Error('subject_name is required');
+  }
+
+  if (!branchId || !yearId) {
+    throw new Error('branch_id and year_id are required');
+  }
+
+  return createAndAssignSubjectToTeacher(teacherId, normalizedName, branchId, yearId);
 }
 
 export async function endSession(

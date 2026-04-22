@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { login, register } from '../services/authService';
+import { login, register, issueDemoTeacherToken } from '../services/authService';
 import { getBranches, getYears } from '../models/userModel';
 
 export async function registerController(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -62,6 +62,15 @@ export async function getYearsController(req: Request, res: Response, next: Next
   try {
     const years = await getYears();
     res.status(200).json({ success: true, years });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function issueDemoTeacherTokenController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await issueDemoTeacherToken();
+    res.status(200).json({ success: true, ...result });
   } catch (error) {
     next(error);
   }

@@ -52,6 +52,16 @@ type TeacherSubject = {
   year_number: number
 }
 
+type BranchOption = {
+  id: string
+  name: string
+}
+
+type YearOption = {
+  id: string
+  year_number: number
+}
+
 type AttendanceRow = {
   student_id: string
   name: string
@@ -84,6 +94,21 @@ type LoginResponse = {
   token: string
   student?: SessionAuth['student']
   message?: string
+}
+
+type DemoTeacherTokenResponse = {
+  success: boolean
+  token: string
+  teacher: {
+    id: string
+    name: string
+  }
+  subject: {
+    id: string
+    name: string
+    branch_name: string
+    year_number: number
+  }
 }
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
@@ -161,6 +186,7 @@ function DashboardApp() {
   const [password, setPassword] = useState('')
   const [tokenInput, setTokenInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingDemoTeacher, setLoadingDemoTeacher] = useState(false)
   const [authError, setAuthError] = useState('')
   const [showTokenLogin, setShowTokenLogin] = useState(false)
   const [session, setSession] = useState<SessionAuth | null>(null)
@@ -185,6 +211,18 @@ function DashboardApp() {
   const [teacherSubjects, setTeacherSubjects] = useState<TeacherSubject[]>([])
   const [selectedSubjectId, setSelectedSubjectId] = useState('')
   const [loadingSubjects, setLoadingSubjects] = useState(false)
+  const [subjectNameInput, setSubjectNameInput] = useState('')
+  const [branchOptions, setBranchOptions] = useState<BranchOption[]>([])
+  const [yearOptions, setYearOptions] = useState<YearOption[]>([])
+  const [selectedBranchId, setSelectedBranchId] = useState('')
+  const [selectedYearId, setSelectedYearId] = useState('')
+  const [addingSubject, setAddingSubject] = useState(false)
+  const [studentNameInput, setStudentNameInput] = useState('')
+  const [studentRollNoInput, setStudentRollNoInput] = useState('')
+  const [studentPasswordInput, setStudentPasswordInput] = useState('')
+  const [studentBranchId, setStudentBranchId] = useState('')
+  const [studentYearId, setStudentYearId] = useState('')
+  const [addingStudent, setAddingStudent] = useState(false)
 
   const [teacherSessionId, setTeacherSessionId] = useState<string | null>(null)
   const [startingSession, setStartingSession] = useState(false)
@@ -345,6 +383,38 @@ function DashboardApp() {
     void loadTeacherSubjects()
   }, [session])
 
+  useEffect(() => {
+    async function loadAcademicOptions() {
+      if (!session || session.role !== 'teacher') {
+        return
+      }
+
+      try {
+        const [branchesRes, yearsRes] = await Promise.all([
+          apiGet<{ success: boolean; branches: BranchOption[] }>('/auth/branches'),
+          apiGet<{ success: boolean; years: YearOption[] }>('/auth/years')
+        ])
+
+        setBranchOptions(branchesRes.branches)
+        setYearOptions(yearsRes.years)
+
+        if (branchesRes.branches.length > 0) {
+          setSelectedBranchId(branchesRes.branches[0].id)
+          setStudentBranchId(branchesRes.branches[0].id)
+        }
+
+        if (yearsRes.years.length > 0) {
+          setSelectedYearId(yearsRes.years[0].id)
+          setStudentYearId(yearsRes.years[0].id)
+        }
+      } catch (error) {
+        setToast({ message: error instanceof Error ? error.message : 'Failed to load branch/year options', type: 'error' })
+      }
+    }
+
+    void loadAcademicOptions()
+  }, [session])
+
   async function refreshTeacherAttendance(sessionId: string, token: string): Promise<void> {
     setLoadingAttendanceTable(true)
     try {
@@ -408,6 +478,29 @@ function DashboardApp() {
     })
   }
 
+  async function handleDemoTeacherLogin() {
+    setAuthError('')
+    setLoadingDemoTeacher(true)
+
+    try {
+      const data = await apiPost<DemoTeacherTokenResponse>('/auth/teacher/demo-token', {})
+      const payload = decodeJwtPayload(data.token)
+
+      setRole('teacher')
+      setTokenInput(data.token)
+      setSession({
+        token: data.token,
+        role: 'teacher',
+        userId: (payload?.studentId as string | undefined) ?? (payload?.userId as string | undefined),
+        rollNo: payload?.rollNo as string | undefined
+      })
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Unable to start demo teacher login')
+    } finally {
+      setLoadingDemoTeacher(false)
+    }
+  }
+
   function logout() {
     setSession(null)
     setTokenInput('')
@@ -441,6 +534,78 @@ function DashboardApp() {
       setToast({ message: error instanceof Error ? error.message : 'Unable to start session', type: 'error' })
     } finally {
       setStartingSession(false)
+    }
+  }
+
+  async function handleAddSubject(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!session || session.role !== 'teacher') {
+      return
+    }
+
+    const trimmedName = subjectNameInput.trim()
+    if (!trimmedName || !selectedBranchId || !selectedYearId) {
+      setToast({ message: 'Subject name, branch and year are required', type: 'error' })
+      return
+    }
+
+    setAddingSubject(true)
+    try {
+      const response = await apiPost<{ success: boolean; subject: { id: string } }>(
+        '/teacher/subjects',
+        {
+          subject_name: trimmedName,
+          branch_id: selectedBranchId,
+          year_id: selectedYearId
+        },
+        session.token
+      )
+
+      const refreshed = await apiGet<{ success: boolean; subjects: TeacherSubject[] }>('/teacher/subjects', session.token)
+      setTeacherSubjects(refreshed.subjects)
+      if (response.subject?.id) {
+        setSelectedSubjectId(response.subject.id)
+      }
+      setSubjectNameInput('')
+      setToast({ message: 'Subject added successfully', type: 'success' })
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : 'Failed to add subject', type: 'error' })
+    } finally {
+      setAddingSubject(false)
+    }
+  }
+
+  async function handleAddStudent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const name = studentNameInput.trim()
+    const roll = studentRollNoInput.trim()
+    const pwd = studentPasswordInput.trim()
+
+    if (!name || !roll || !pwd || !studentBranchId || !studentYearId) {
+      setToast({ message: 'Name, roll no, password, branch and year are required', type: 'error' })
+      return
+    }
+
+    setAddingStudent(true)
+    try {
+      await apiPost('/auth/register', {
+        name,
+        roll_no: roll,
+        password: pwd,
+        branch_id: studentBranchId,
+        year_id: studentYearId
+      })
+
+      setStudentNameInput('')
+      setStudentRollNoInput('')
+      setStudentPasswordInput('')
+      setToast({ message: 'Student added successfully', type: 'success' })
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : 'Failed to add student', type: 'error' })
+    } finally {
+      setAddingStudent(false)
     }
   }
 
@@ -548,6 +713,10 @@ function DashboardApp() {
                 <h2 className="text-2xl font-semibold text-gray-900">Welcome back</h2>
                 <p className="mt-2 text-sm text-gray-500">Sign in to access your attendance dashboard.</p>
               </div>
+
+              <Button type="button" variant="secondary" fullWidth className="mb-4" onClick={handleDemoTeacherLogin} disabled={loadingDemoTeacher}>
+                {loadingDemoTeacher ? 'Preparing demo teacher...' : 'Use Demo Teacher (Auto Token)'}
+              </Button>
 
               <form className="space-y-5" onSubmit={handleCredentialLogin}>
                 <div>
@@ -758,6 +927,42 @@ function DashboardApp() {
                 <Skeleton className="h-11 w-full" />
               ) : (
                 <div className="space-y-4">
+                  <form className="grid gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 md:grid-cols-4" onSubmit={handleAddSubject}>
+                    <input
+                      className="md:col-span-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2"
+                      placeholder="New subject name"
+                      value={subjectNameInput}
+                      onChange={(event) => setSubjectNameInput(event.target.value)}
+                    />
+                    <select
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2"
+                      value={selectedBranchId}
+                      onChange={(event) => setSelectedBranchId(event.target.value)}
+                    >
+                      {branchOptions.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2"
+                        value={selectedYearId}
+                        onChange={(event) => setSelectedYearId(event.target.value)}
+                      >
+                        {yearOptions.map((year) => (
+                          <option key={year.id} value={year.id}>
+                            Year {year.year_number}
+                          </option>
+                        ))}
+                      </select>
+                      <Button type="submit" disabled={addingSubject}>
+                        {addingSubject ? 'Adding...' : 'Add Subject'}
+                      </Button>
+                    </div>
+                  </form>
+
                   <select
                     className="w-full rounded-lg border border-gray-300 px-3 py-2"
                     value={selectedSubjectId}
@@ -781,6 +986,55 @@ function DashboardApp() {
                   </div>
                 </div>
               )}
+            </Card>
+
+            <Card title="Add Student" subtitle="Register student for branch and year">
+              <form className="grid gap-3 md:grid-cols-2" onSubmit={handleAddStudent}>
+                <input
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  placeholder="Student name"
+                  value={studentNameInput}
+                  onChange={(event) => setStudentNameInput(event.target.value)}
+                />
+                <input
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  placeholder="Roll number"
+                  value={studentRollNoInput}
+                  onChange={(event) => setStudentRollNoInput(event.target.value)}
+                />
+                <input
+                  type="password"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  placeholder="Password"
+                  value={studentPasswordInput}
+                  onChange={(event) => setStudentPasswordInput(event.target.value)}
+                />
+                <select
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  value={studentBranchId}
+                  onChange={(event) => setStudentBranchId(event.target.value)}
+                >
+                  {branchOptions.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  value={studentYearId}
+                  onChange={(event) => setStudentYearId(event.target.value)}
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year.id} value={year.id}>
+                      Year {year.year_number}
+                    </option>
+                  ))}
+                </select>
+                <Button type="submit" disabled={addingStudent}>
+                  {addingStudent ? 'Adding...' : 'Add Student'}
+                </Button>
+              </form>
             </Card>
 
             <Card title="Live Attendance Panel">
