@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
+    "dev:clean": "sh -c 'fuser -k 8000/tcp 2>/dev/null || true; nodemon --watch src --ext ts --exec ts-node src/server.ts'",
     "build": "tsc",
     "start": "node dist/server.js"
   },
