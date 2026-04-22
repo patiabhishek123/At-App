@@ -146,7 +146,7 @@ export async function getSessionAttendanceCsvController(req: Request, res: Respo
 
     const csv = await getAttendanceCsv(sessionId, requesterId, requesterRole);
 
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="session-${sessionId}-attendance.csv"`);
     res.status(200).send(csv);
   } catch (error) {

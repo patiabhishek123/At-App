@@ -511,9 +511,9 @@ function DashboardApp() {
 
   const attendancePercent = useMemo(() => {
     if (!studentStats) {
-      return 0
+      return '0.00'
     }
-    return studentStats.attendance_percentage
+    return studentStats.attendance_percentage.toFixed(2)
   }, [studentStats])
 
   if (!session) {
