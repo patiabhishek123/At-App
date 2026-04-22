@@ -9,7 +9,7 @@ type CardProps = PropsWithChildren<{
 
 export function Card({ title, subtitle, right, className = '', children }: CardProps) {
   return (
-    <section className={`rounded-xl border border-gray-200 bg-white p-6 shadow-sm ${className}`}>
+    <section className={`rounded-2xl border border-gray-100 bg-white p-6 shadow-lg ${className}`}>
       {(title || subtitle || right) && (
         <header className="mb-4 flex items-start justify-between gap-4">
           <div>

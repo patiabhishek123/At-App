@@ -162,6 +162,7 @@ function DashboardApp() {
   const [tokenInput, setTokenInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [authError, setAuthError] = useState('')
+  const [showTokenLogin, setShowTokenLogin] = useState(false)
   const [session, setSession] = useState<SessionAuth | null>(null)
   const [toast, setToast] = useState<ToastState | null>(null)
 
@@ -518,66 +519,118 @@ function DashboardApp() {
 
   if (!session) {
     return (
-      <main className="min-h-screen bg-gray-50 p-6">
-        <div className="mx-auto max-w-3xl space-y-6">
-          <Card title="Attendance System" subtitle="Sign in to continue">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-gray-700">Role</label>
-                <select
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                  value={role}
-                  onChange={(event) => setRole(event.target.value as Role)}
-                >
-                  <option value="student">Student</option>
-                  <option value="teacher">Teacher</option>
-                  <option value="admin">Admin</option>
-                </select>
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-6">
+        <div className="grid w-full max-w-[900px] gap-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-lg md:grid-cols-[1.05fr_0.95fr] md:p-8">
+          <section className="flex flex-col justify-center rounded-2xl border border-gray-100 bg-gradient-to-br from-white via-indigo-50/50 to-blue-50/70 p-6 shadow-lg">
+            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-2xl shadow-sm">
+              🎓
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Smart Attendance System</h1>
+            <p className="mt-3 text-base leading-7 text-gray-600">
+              Fast, secure, real-time attendance tracking for students and faculty.
+            </p>
+
+            <div className="mt-8 grid gap-4">
+              <div className="rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-lg">
+                <p className="text-sm font-semibold text-gray-900">Real-time session updates</p>
+                <p className="mt-1 text-sm text-gray-600">Students receive class availability instantly via live socket updates.</p>
+              </div>
+              <div className="rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-lg">
+                <p className="text-sm font-semibold text-gray-900">Accurate attendance insights</p>
+                <p className="mt-1 text-sm text-gray-600">Track attendance history, percentages, and session-level exports with ease.</p>
               </div>
             </div>
-          </Card>
+          </section>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card title="Login with Credentials">
-              <form className="space-y-3" onSubmit={handleCredentialLogin}>
-                <input
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                  placeholder="Roll No"
-                  value={rollNo}
-                  onChange={(event) => setRollNo(event.target.value)}
-                  required
-                />
-                <input
-                  type="password"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                />
-                <Button type="submit" fullWidth disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign in'}
+          <section className="rounded-2xl border border-gray-100 bg-white p-1 shadow-lg">
+            <div className="rounded-2xl bg-white p-5 md:p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900">Welcome back</h2>
+                <p className="mt-2 text-sm text-gray-500">Sign in to access your attendance dashboard.</p>
+              </div>
+
+              <form className="space-y-5" onSubmit={handleCredentialLogin}>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">Select Role</label>
+                  <div className="grid grid-cols-3 gap-2 rounded-xl bg-gray-100 p-1">
+                    {(['student', 'teacher', 'admin'] as Role[]).map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setRole(option)}
+                        className={`rounded-lg px-3 py-2 text-sm font-medium capitalize transition ${
+                          role === option
+                            ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-indigo-200'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Roll No</label>
+                    <input
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base text-gray-900 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-300"
+                      placeholder="Enter your roll number"
+                      value={rollNo}
+                      onChange={(event) => setRollNo(event.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Password</label>
+                    <input
+                      type="password"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base text-gray-900 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-300"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {authError && <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{authError}</p>}
+
+                <Button type="submit" fullWidth disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
+                  {loading ? 'Signing in...' : 'Login'}
                 </Button>
               </form>
-            </Card>
 
-            <Card title="Login with JWT Token">
-              <form className="space-y-3" onSubmit={handleTokenLogin}>
-                <textarea
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                  rows={5}
-                  placeholder="Paste JWT token"
-                  value={tokenInput}
-                  onChange={(event) => setTokenInput(event.target.value)}
-                />
-                <Button type="submit" variant="secondary" fullWidth>
-                  Use Token
-                </Button>
-              </form>
-            </Card>
-          </div>
+              <div className="mt-6 border-t border-gray-100 pt-5">
+                <button
+                  type="button"
+                  onClick={() => setShowTokenLogin((current) => !current)}
+                  className="text-sm font-medium text-indigo-600 transition hover:text-indigo-700"
+                >
+                  {showTokenLogin ? 'Hide token login' : 'Have a token? Paste here'}
+                </button>
 
-          {authError && <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{authError}</p>}
+                {showTokenLogin && (
+                  <form className="mt-4 space-y-3" onSubmit={handleTokenLogin}>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700">JWT Token</label>
+                      <textarea
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-300"
+                        rows={4}
+                        placeholder="Paste your access token"
+                        value={tokenInput}
+                        onChange={(event) => setTokenInput(event.target.value)}
+                      />
+                    </div>
+                    <Button type="submit" variant="secondary" fullWidth>
+                      Continue with token
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </div>
+          </section>
         </div>
       </main>
     )
