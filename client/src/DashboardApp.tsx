@@ -542,7 +542,7 @@ function DashboardApp() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-gray-100 bg-white p-1 shadow-lg">
+          <section className="animate-fade-in rounded-2xl border border-gray-100 bg-white p-1 shadow-lg">
             <div className="rounded-2xl bg-white p-5 md:p-6">
               <div className="mb-6">
                 <h2 className="text-2xl font-semibold text-gray-900">Welcome back</h2>
