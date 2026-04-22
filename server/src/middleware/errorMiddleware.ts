@@ -38,6 +38,16 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     return;
   }
 
+  if (message === 'Student not eligible for this session' || message === 'Student branch/year does not match session subject') {
+    res.status(403).json({ success: false, message });
+    return;
+  }
+
+  if (message === 'Subject not found') {
+    res.status(404).json({ success: false, message });
+    return;
+  }
+
   if (message === 'Attendance already marked') {
     res.status(409).json({ success: false, message });
     return;

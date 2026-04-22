@@ -154,7 +154,8 @@ export function broadcastSessionTokenToStudents(sessionToken: string, sessionId:
   const payload = JSON.stringify({
     type: 'session.started',
     sessionId,
-    sessionToken
+    sessionToken,
+    validitySeconds: env.sessionValiditySeconds
   });
 
   for (const [studentId, socket] of connectedStudents.entries()) {
@@ -164,6 +165,37 @@ export function broadcastSessionTokenToStudents(sessionToken: string, sessionId:
     }
 
     connectedStudents.delete(studentId);
+  }
+}
+
+export function broadcastSessionEnded(sessionId: string): void {
+  const payload = JSON.stringify({
+    type: 'session.ended',
+    sessionId
+  });
+
+  for (const [studentId, socket] of connectedStudents.entries()) {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(payload);
+      continue;
+    }
+
+    connectedStudents.delete(studentId);
+  }
+
+  for (const [teacherId, sockets] of connectedTeachers.entries()) {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(payload);
+        continue;
+      }
+
+      sockets.delete(socket);
+    }
+
+    if (sockets.size === 0) {
+      connectedTeachers.delete(teacherId);
+    }
   }
 }
 
