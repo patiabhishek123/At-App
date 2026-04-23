@@ -34,12 +34,60 @@ body {
   }
 }
 
+@keyframes pulse-orb {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.25);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(79, 70, 229, 0);
+    transform: scale(1.01);
+  }
+}
+
+@keyframes counter-pop {
+  0% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes ticker-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 .animate-fade-in {
   animation: fade-in-up 320ms ease-out both;
 }
 
+.animate-orb-pulse {
+  animation: pulse-orb 1.8s ease-in-out infinite;
+}
+
+.animate-counter-pop {
+  animation: counter-pop 520ms ease-out;
+}
+
+.animate-ticker-left {
+  animation: ticker-left 22s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-in {
+  .animate-fade-in,
+  .animate-orb-pulse,
+  .animate-counter-pop,
+  .animate-ticker-left {
     animation: none;
   }
 }

@@ -89,6 +89,14 @@ type AttendanceRealtimePayload = {
   }
 }
 
+type FeedEvent = {
+  id: string
+  title: string
+  detail?: string
+  level: 'info' | 'success' | 'warning'
+  at: string
+}
+
 type LoginResponse = {
   success: boolean
   token: string
@@ -231,10 +239,24 @@ function DashboardApp() {
   const [presentStudents, setPresentStudents] = useState(0)
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([])
   const [loadingAttendanceTable, setLoadingAttendanceTable] = useState(false)
+  const [eventFeed, setEventFeed] = useState<FeedEvent[]>([])
 
   const studentName = session?.student?.name ?? 'Student'
   const studentBranch = session?.student?.branch_name ?? 'N/A'
   const studentYear = session?.student?.year_number ?? 'N/A'
+
+  function pushEvent(title: string, detail?: string, level: FeedEvent['level'] = 'info') {
+    setEventFeed((current) => [
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        title,
+        detail,
+        level,
+        at: new Date().toISOString()
+      },
+      ...current
+    ].slice(0, 12))
+  }
 
   useEffect(() => {
     if (!session) {
@@ -263,6 +285,7 @@ function DashboardApp() {
             const expiresAt = Date.now() + validity * 1000
             setSessionExpiresAt(expiresAt)
             setCountdown(validity)
+            pushEvent('Session broadcast started', `Session ${sessionEvent.sessionId ?? 'unknown'} is live`, 'success')
           }
           return
         }
@@ -281,6 +304,8 @@ function DashboardApp() {
             setTeacherSessionId(null)
           }
 
+          pushEvent('Session ended', `Session ${sessionEvent.sessionId ?? 'unknown'} closed`, 'warning')
+
           return
         }
 
@@ -298,6 +323,7 @@ function DashboardApp() {
                 : row
             )
           )
+          pushEvent('Attendance marked', `${attendanceEvent.student.roll_no} marked present`, 'success')
         }
       }
     })
@@ -530,6 +556,7 @@ function DashboardApp() {
       setTeacherSessionId(response.session.id)
       await refreshTeacherAttendance(response.session.id, session.token)
       setToast({ message: 'Session started successfully', type: 'success' })
+      pushEvent('Session started', `Session ${response.session.id}`, 'success')
     } catch (error) {
       setToast({ message: error instanceof Error ? error.message : 'Unable to start session', type: 'error' })
     } finally {
@@ -569,6 +596,7 @@ function DashboardApp() {
       }
       setSubjectNameInput('')
       setToast({ message: 'Subject added successfully', type: 'success' })
+      pushEvent('Subject added', trimmedName, 'success')
     } catch (error) {
       setToast({ message: error instanceof Error ? error.message : 'Failed to add subject', type: 'error' })
     } finally {
@@ -602,6 +630,7 @@ function DashboardApp() {
       setStudentRollNoInput('')
       setStudentPasswordInput('')
       setToast({ message: 'Student added successfully', type: 'success' })
+      pushEvent('Student added', `${name} (${roll})`, 'success')
     } catch (error) {
       setToast({ message: error instanceof Error ? error.message : 'Failed to add student', type: 'error' })
     } finally {
@@ -619,6 +648,7 @@ function DashboardApp() {
       await apiPost('/sessions/end', { session_id: teacherSessionId }, session.token)
       setTeacherSessionId(null)
       setToast({ message: 'Session ended', type: 'success' })
+      pushEvent('Session ended manually', `Session ${teacherSessionId}`, 'warning')
     } catch (error) {
       setToast({ message: error instanceof Error ? error.message : 'Unable to end session', type: 'error' })
     } finally {
@@ -643,6 +673,7 @@ function DashboardApp() {
       setAttendanceMessage(message)
       setAttendanceLocked(true)
       setToast({ message, type: 'success' })
+      pushEvent('Attendance confirmed', message, 'success')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to mark attendance'
       setAttendanceMessage(message)
@@ -670,6 +701,7 @@ function DashboardApp() {
       link.click()
       URL.revokeObjectURL(url)
       setToast({ message: 'CSV downloaded', type: 'success' })
+      pushEvent('Export complete', `session-${teacherSessionId}-attendance.csv`, 'info')
     } catch (error) {
       setToast({ message: error instanceof Error ? error.message : 'Failed to download CSV', type: 'error' })
     }
@@ -681,6 +713,17 @@ function DashboardApp() {
     }
     return studentStats.attendance_percentage.toFixed(2)
   }, [studentStats])
+
+  const teacherPresenceRate = useMemo(() => {
+    if (!eligibleStudents) {
+      return 0
+    }
+    return Math.round((presentStudents / eligibleStudents) * 100)
+  }, [presentStudents, eligibleStudents])
+
+  const teacherTickerItems = useMemo(() => {
+    return eventFeed.slice(0, 6).map((event) => event.title)
+  }, [eventFeed])
 
   if (!session) {
     return (
@@ -806,17 +849,17 @@ function DashboardApp() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_15%_20%,#dbeafe_0%,#eef2ff_25%,#f8fafc_70%)]">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <nav className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+      <nav className="border-b border-indigo-100/70 bg-white/75 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-[1450px] items-center justify-between px-6 py-4">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Attendance System</h1>
+            <h1 className="text-lg font-semibold text-gray-900">QCAMS Command Center</h1>
             <p className="text-sm text-gray-500">Socket: {socketState}</p>
           </div>
           <div className="flex items-center gap-3 text-sm">
-            <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700">{session.role}</span>
+            <span className="rounded-full bg-indigo-100 px-3 py-1 font-medium capitalize text-indigo-700">{session.role}</span>
             <Button variant="secondary" onClick={logout}>
               Logout
             </Button>
@@ -824,7 +867,8 @@ function DashboardApp() {
         </div>
       </nav>
 
-      <section className="mx-auto grid w-full max-w-6xl gap-6 p-6">
+      <div className="mx-auto grid w-full max-w-[1450px] gap-6 p-6 xl:grid-cols-[1fr_320px]">
+      <section className="grid gap-6">
         {session.role === 'student' && (
           <>
             <Card title={`Welcome, ${studentName}`} subtitle={`Branch: ${studentBranch} | Year: ${studentYear}`} />
@@ -920,73 +964,136 @@ function DashboardApp() {
 
         {session.role === 'teacher' && (
           <>
-            <Card title="Teacher Dashboard" subtitle="Manage class sessions and monitor live attendance" />
+            <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-white/80 px-4 py-3 shadow-lg backdrop-blur">
+              <div className="flex min-w-max items-center gap-3 animate-ticker-left">
+                {(teacherTickerItems.length > 0 ? teacherTickerItems : ['Teacher Studio ready', 'Awaiting live session']).concat(
+                  teacherTickerItems.length > 0 ? teacherTickerItems : ['Teacher Studio ready', 'Awaiting live session']
+                ).map((item, index) => (
+                  <span key={`${item}-${index}`} className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
 
-            <Card title="Session Controls">
-              {loadingSubjects ? (
-                <Skeleton className="h-11 w-full" />
-              ) : (
-                <div className="space-y-4">
-                  <form className="grid gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 md:grid-cols-4" onSubmit={handleAddSubject}>
-                    <input
-                      className="md:col-span-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2"
-                      placeholder="New subject name"
-                      value={subjectNameInput}
-                      onChange={(event) => setSubjectNameInput(event.target.value)}
-                    />
-                    <select
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2"
-                      value={selectedBranchId}
-                      onChange={(event) => setSelectedBranchId(event.target.value)}
+            <div className="grid gap-6 xl:grid-cols-2">
+              <Card title="Teacher Studio" subtitle="Session Orb + rapid controls">
+                <div className="grid items-center gap-6 lg:grid-cols-[210px_1fr]">
+                  <div className="mx-auto">
+                    <div
+                      className={`relative flex h-48 w-48 items-center justify-center rounded-full p-2 shadow-lg ${teacherSessionId ? 'animate-orb-pulse' : ''}`}
+                      style={{
+                        background: `conic-gradient(#4f46e5 ${Math.max(0, Math.min(100, ((30 - Math.max(0, countdown)) / 30) * 100))}%, #e5e7eb 0)`
+                      }}
                     >
-                      {branchOptions.map((branch) => (
-                        <option key={branch.id} value={branch.id}>
-                          {branch.name}
+                      <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-center">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-gray-500">Session Orb</p>
+                        <p className="mt-1 text-3xl font-bold text-gray-900">{countdown > 0 ? `${countdown}s` : 'Idle'}</p>
+                        <p className="mt-1 text-xs text-gray-500">{teacherSessionId ? `#${teacherSessionId}` : 'No active session'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-gray-700">Assigned Subject Capsules</p>
+                    <div className="flex flex-wrap gap-2">
+                      {teacherSubjects.length === 0 && (
+                        <span className="rounded-full border border-dashed border-gray-300 px-3 py-1 text-xs text-gray-500">
+                          No subjects assigned
+                        </span>
+                      )}
+                      {teacherSubjects.map((subject) => (
+                        <button
+                          key={subject.id}
+                          type="button"
+                          onClick={() => setSelectedSubjectId(subject.id)}
+                          className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                            selectedSubjectId === subject.id
+                              ? 'border-indigo-200 bg-indigo-100 text-indigo-700'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-200 hover:text-indigo-600'
+                          }`}
+                        >
+                          {subject.name}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50 p-3 text-sm text-gray-700">
+                      Selected: <span className="font-semibold text-gray-900">{teacherSubjects.find((s) => s.id === selectedSubjectId)?.name ?? 'None'}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card title="Action Dock" subtitle="Launch, close, and export in one place">
+                {loadingSubjects ? (
+                  <Skeleton className="h-11 w-full" />
+                ) : (
+                  <div className="space-y-4">
+                    <select
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      value={selectedSubjectId}
+                      onChange={(event) => setSelectedSubjectId(event.target.value)}
+                    >
+                      {teacherSubjects.map((subject) => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name} ({subject.branch_name} - Year {subject.year_number})
                         </option>
                       ))}
+                      {teacherSubjects.length === 0 && <option value="">No subjects assigned</option>}
                     </select>
-                    <div className="flex gap-2">
+
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <Button onClick={handleStartSession} disabled={startingSession || !selectedSubjectId}>
+                        {startingSession ? 'Starting...' : 'Start'}
+                      </Button>
+                      <Button variant="danger" onClick={handleEndSession} disabled={endingSession || !teacherSessionId}>
+                        {endingSession ? 'Ending...' : 'End'}
+                      </Button>
+                      <Button variant="secondary" onClick={handleDownloadCsv} disabled={!teacherSessionId}>
+                        Export CSV
+                      </Button>
+                    </div>
+
+                    <form className="grid gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 md:grid-cols-4" onSubmit={handleAddSubject}>
+                      <input
+                        className="md:col-span-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2"
+                        placeholder="New subject name"
+                        value={subjectNameInput}
+                        onChange={(event) => setSubjectNameInput(event.target.value)}
+                      />
                       <select
                         className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2"
-                        value={selectedYearId}
-                        onChange={(event) => setSelectedYearId(event.target.value)}
+                        value={selectedBranchId}
+                        onChange={(event) => setSelectedBranchId(event.target.value)}
                       >
-                        {yearOptions.map((year) => (
-                          <option key={year.id} value={year.id}>
-                            Year {year.year_number}
+                        {branchOptions.map((branch) => (
+                          <option key={branch.id} value={branch.id}>
+                            {branch.name}
                           </option>
                         ))}
                       </select>
-                      <Button type="submit" disabled={addingSubject}>
-                        {addingSubject ? 'Adding...' : 'Add Subject'}
-                      </Button>
-                    </div>
-                  </form>
-
-                  <select
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                    value={selectedSubjectId}
-                    onChange={(event) => setSelectedSubjectId(event.target.value)}
-                  >
-                    {teacherSubjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name} ({subject.branch_name} - Year {subject.year_number})
-                      </option>
-                    ))}
-                    {teacherSubjects.length === 0 && <option value="">No subjects assigned</option>}
-                  </select>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <Button onClick={handleStartSession} disabled={startingSession || !selectedSubjectId}>
-                      {startingSession ? 'Starting...' : 'Start Session'}
-                    </Button>
-                    <Button variant="danger" onClick={handleEndSession} disabled={endingSession || !teacherSessionId}>
-                      {endingSession ? 'Ending...' : 'End Session'}
-                    </Button>
+                      <div className="flex gap-2">
+                        <select
+                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2"
+                          value={selectedYearId}
+                          onChange={(event) => setSelectedYearId(event.target.value)}
+                        >
+                          {yearOptions.map((year) => (
+                            <option key={year.id} value={year.id}>
+                              Year {year.year_number}
+                            </option>
+                          ))}
+                        </select>
+                        <Button type="submit" disabled={addingSubject}>
+                          {addingSubject ? 'Adding...' : 'Add'}
+                        </Button>
+                      </div>
+                    </form>
                   </div>
-                </div>
-              )}
-            </Card>
+                )}
+              </Card>
+            </div>
 
             <Card title="Add Student" subtitle="Register student for branch and year">
               <form className="grid gap-3 md:grid-cols-2" onSubmit={handleAddStudent}>
@@ -1039,17 +1146,24 @@ function DashboardApp() {
 
             <Card title="Live Attendance Panel">
               <div className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-lg border border-gray-200 p-4">
+                <div className="rounded-lg border border-gray-200 bg-white p-4">
                   <p className="text-xs uppercase text-gray-500">Active Session</p>
                   <p className="mt-1 text-base font-semibold text-gray-900">{teacherSessionId ?? 'None'}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4">
+                <div className="rounded-lg border border-gray-200 bg-white p-4">
                   <p className="text-xs uppercase text-gray-500">Total Students Eligible</p>
-                  <p className="mt-1 text-xl font-semibold text-gray-900">{eligibleStudents}</p>
+                  <p className="mt-1 text-xl font-semibold text-gray-900 animate-counter-pop">{eligibleStudents}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4">
+                <div className="rounded-lg border border-gray-200 bg-white p-4">
                   <p className="text-xs uppercase text-gray-500">Marked Present</p>
-                  <p className="mt-1 text-xl font-semibold text-gray-900">{presentStudents}</p>
+                  <p className="mt-1 text-xl font-semibold text-gray-900 animate-counter-pop">{presentStudents}</p>
+                </div>
+                <div className="rounded-lg border border-indigo-100 bg-gradient-to-br from-white to-indigo-50 p-4 md:col-span-3">
+                  <p className="text-xs uppercase text-gray-500">Session Completion Signal</p>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200">
+                    <div className="h-full rounded-full bg-indigo-500 transition-all duration-500" style={{ width: `${teacherPresenceRate}%` }} />
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-gray-700">{teacherPresenceRate}% of eligible students marked present</p>
                 </div>
               </div>
             </Card>
@@ -1101,9 +1215,64 @@ function DashboardApp() {
         )}
 
         {session.role === 'admin' && (
-          <Card title="Admin Dashboard" subtitle="Admin role is authenticated. Additional admin views can be added here." />
+          <>
+            <Card title="Admin Atlas" subtitle="Global attendance intelligence cockpit" />
+            <Card title="System Snapshot">
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50 p-4">
+                  <p className="text-xs uppercase text-gray-500">Feed Events</p>
+                  <p className="mt-1 text-xl font-semibold text-gray-900">{eventFeed.length}</p>
+                </div>
+                <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50 p-4">
+                  <p className="text-xs uppercase text-gray-500">Socket Health</p>
+                  <p className="mt-1 text-xl font-semibold capitalize text-gray-900">{socketState}</p>
+                </div>
+                <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50 p-4">
+                  <p className="text-xs uppercase text-gray-500">Live Ref</p>
+                  <p className="mt-1 text-xl font-semibold text-gray-900">{teacherSessionId ?? activeSessionId ?? '—'}</p>
+                </div>
+              </div>
+            </Card>
+          </>
         )}
       </section>
+
+      <aside className="h-fit space-y-3 rounded-2xl border border-indigo-100 bg-white/75 p-4 shadow-lg backdrop-blur">
+        <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50 p-3">
+          <p className="text-xs uppercase tracking-wide text-indigo-500">Event Stream</p>
+          <p className="mt-1 text-xs text-gray-500">Real-time timeline</p>
+        </div>
+
+        <div className="max-h-[68vh] space-y-2 overflow-y-auto pr-1">
+          {eventFeed.length === 0 && (
+            <div className="rounded-xl border border-dashed border-gray-300 p-3 text-sm text-gray-500">
+              No events yet.
+            </div>
+          )}
+
+          {eventFeed.map((event) => (
+            <article key={event.id} className="rounded-xl border border-gray-100 bg-white p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-gray-900">{event.title}</p>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                    event.level === 'success'
+                      ? 'bg-green-100 text-green-700'
+                      : event.level === 'warning'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-indigo-100 text-indigo-700'
+                  }`}
+                >
+                  {event.level}
+                </span>
+              </div>
+              {event.detail && <p className="mt-1 text-xs text-gray-600">{event.detail}</p>}
+              <p className="mt-2 text-[11px] text-gray-400">{new Date(event.at).toLocaleTimeString()}</p>
+            </article>
+          ))}
+        </div>
+      </aside>
+      </div>
     </main>
   )
 }
