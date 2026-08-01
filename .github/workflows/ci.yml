@@ -1,0 +1,146 @@
+name: AtApp CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend:
+    name: Backend CI (Go)
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: atapp_user
+          POSTGRES_PASSWORD: atapp_password
+          POSTGRES_DB: atapp_db
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: server/go.sum
+
+      - name: Install dependencies
+        run: go mod download
+        working-directory: server
+
+      - name: Run golangci-lint
+        uses: golangci-lint/golangci-lint-action@v6
+        with:
+          version: v1.59
+          working-directory: server
+          args: --timeout=5m
+        continue-on-error: true
+
+      - name: Run Tests
+        run: go test -v ./...
+        working-directory: server
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5433
+          DB_USER: atapp_user
+          DB_PASSWORD: atapp_password
+          DB_NAME: atapp_db
+
+      - name: Build
+        run: go build -v ./...
+        working-directory: server
+
+  admin-frontend:
+    name: Admin Frontend CI (Next.js)
+    runs-on: ubuntu-latest
+    # Run only if files in admin directory change (once created)
+    # For now, this is a skeleton pipeline that runs checks when the admin directory exists.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if Admin exists
+        id: check_admin
+        run: |
+          if [ -d "admin" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Node.js
+        if: steps.check_admin.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install dependencies & Lint & Test
+        if: steps.check_admin.outputs.exists == 'true'
+        run: |
+          cd admin
+          npm ci
+          npm run lint
+          npm test
+          npm run build
+
+  mobile-frontend:
+    name: Mobile Frontend CI (Flutter)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if Mobile exists
+        id: check_mobile
+        run: |
+          if [ -d "mobile" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Java
+        if: steps.check_mobile.outputs.exists == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        if: steps.check_mobile.outputs.exists == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.x'
+          channel: 'stable'
+
+      - name: Get packages & Analyze & Test
+        if: steps.check_mobile.outputs.exists == 'true'
+        run: |
+          cd mobile
+          flutter pub get
+          flutter analyze
+          flutter test

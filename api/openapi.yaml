@@ -1,0 +1,306 @@
+openapi: 3.0.3
+info:
+  title: AtApp Gateway API
+  description: API Gateway interface for client-service interactions in AtApp college attendance system.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate user
+      description: Logs in a student, teacher, or admin and returns JWT claims containing user role and college_id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: teacher@mit.edu
+                password:
+                  type: string
+                  format: password
+                  example: securepassword123
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refreshToken:
+                    type: string
+                    example: d310702d-6be6-4444-8848-18e404bf7c50
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                        example: Dr. Jane Doe
+                      email:
+                        type: string
+                        example: teacher@mit.edu
+                      role:
+                        type: string
+                        enum: [student, teacher, admin]
+                        example: teacher
+                      collegeId:
+                        type: string
+                        format: uuid
+        '401':
+          description: Invalid credentials
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Access token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+        '401':
+          description: Invalid or expired refresh token
+
+  /teacher/sessions:
+    post:
+      summary: Start a class session
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sectionId
+              properties:
+                sectionId:
+                  type: string
+                  format: uuid
+                geofenceOverride:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+                    radiusM:
+                      type: number
+      responses:
+        '201':
+          description: Session successfully started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                    format: uuid
+                  currentCode:
+                    type: string
+                    example: "482910"
+                  codeExpiresInSeconds:
+                    type: integer
+                    example: 10
+        '403':
+          description: Unauthorized role (requires teacher)
+
+  /teacher/sessions/{sessionId}/end:
+    post:
+      summary: End a class session
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session successfully ended
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                    format: uuid
+                  summary:
+                    type: object
+                    properties:
+                      presentCount:
+                        type: integer
+                      absentCount:
+                        type: integer
+                      overrideCount:
+                        type: integer
+
+  /student/checkin:
+    post:
+      summary: Submit a session check-in
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  example: "482910"
+                bssid:
+                  type: string
+                  example: "00:0a:95:9d:68:16"
+                gps:
+                  type: object
+                  required:
+                    - lat
+                    - lng
+                  properties:
+                    lat:
+                      type: number
+                      example: 42.3601
+                    lng:
+                      type: number
+                      example: -71.0942
+      responses:
+        '200':
+          description: Checkin processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    enum: [accepted, rejected]
+                    example: accepted
+                  rejectionReason:
+                    type: string
+                    nullable: true
+                    example: "Out of classroom geofence"
+        '400':
+          description: Invalid parameters or no active session found
+
+  /teacher/attendance/overrides:
+    post:
+      summary: Manually override student attendance
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - studentId
+                - status
+                - reason
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                studentId:
+                  type: string
+                  format: uuid
+                status:
+                  type: string
+                  enum: [overridden_present, overridden_absent]
+                reason:
+                  type: string
+                  example: "Student was present but forgot phone"
+      responses:
+        '200':
+          description: Override successfully recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recordId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+
+  /student/courses:
+    get:
+      summary: Get student enrolled courses and current attendance
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of student courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sectionId:
+                      type: string
+                      format: uuid
+                    courseName:
+                      type: string
+                      example: "Introduction to Computer Science"
+                    courseCode:
+                      type: string
+                      example: "CS101"
+                    presentCount:
+                      type: integer
+                      example: 18
+                    totalSessions:
+                      type: integer
+                      example: 20
+                    attendancePct:
+                      type: number
+                      example: 90.00
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
