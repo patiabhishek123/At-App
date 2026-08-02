@@ -42,164 +42,152 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final DateFormat formatter = DateFormat('EEE, MMM d, yyyy - h:mm a');
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFFE8EAF6),
-            Color(0xFFF0F4F8),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text(
-            'Session History',
-            style: TextStyle(
-              color: Color(0xFF2D3748),
-              fontWeight: FontWeight.bold,
-            ),
+    return Scaffold(
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        title: const Text(
+          'Session History',
+          style: TextStyle(
+            color: AppTheme.textDark,
+            fontWeight: FontWeight.w900,
           ),
-          backgroundColor: Colors.transparent,
-          foregroundColor: const Color(0xFF2D3748),
-          elevation: 0,
         ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Top Course Title Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: NeumorphicCard(
-                borderRadius: 20,
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  widget.courseName,
-                  style: const TextStyle(
-                    color: Color(0xFF2D3748),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+        backgroundColor: Colors.transparent,
+        foregroundColor: AppTheme.textDark,
+        elevation: 0,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Top Course Title Card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: NeumorphicCard(
+              borderRadius: 20,
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                widget.courseName,
+                style: const TextStyle(
+                  color: AppTheme.textDark,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            
-            // History list
-            Expanded(
-              child: _loading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Color(0xFF6C63FF)),
-                      ),
-                    )
-                  : _history.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No sessions conducted yet.',
-                            style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                          itemCount: _history.length,
-                          itemBuilder: (context, index) {
-                            final item = _history[index];
-                            final formattedStart = formatter.format(item.startedAt);
-                            
-                            int total = item.presentCount + item.absentCount;
-                            double percent = total > 0 ? (item.presentCount / total) * 100 : 0.0;
+          ),
+          const SizedBox(height: 8),
+          
+          // History list
+          Expanded(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation(AppTheme.primary),
+                    ),
+                  )
+                : _history.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No sessions conducted yet.',
+                          style: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.bold),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        itemCount: _history.length,
+                        itemBuilder: (context, index) {
+                          final item = _history[index];
+                          final formattedStart = formatter.format(item.startedAt);
+                          
+                          int total = item.presentCount + item.absentCount;
+                          double percent = total > 0 ? (item.presentCount / total) * 100 : 0.0;
 
-                            Color badgeColor = const Color(0xFF4AD66D); // healthy
-                            String turnoutStatusText = 'GOOD';
-                            if (percent < 60.0) {
-                              badgeColor = const Color(0xFFF35B7A); // critical
-                              turnoutStatusText = 'LOW';
-                            } else if (percent < 75.0) {
-                              badgeColor = const Color(0xFFFFAA00); // warning
-                              turnoutStatusText = 'ALERT';
-                            }
+                          Color badgeColor = AppTheme.success; // healthy
+                          String turnoutStatusText = 'GOOD';
+                          if (percent < 60.0) {
+                            badgeColor = AppTheme.danger; // critical
+                            turnoutStatusText = 'LOW';
+                          } else if (percent < 75.0) {
+                            badgeColor = AppTheme.warning; // warning
+                            turnoutStatusText = 'ALERT';
+                          }
 
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16.0),
-                              child: NeumorphicCard(
-                                borderRadius: 16,
-                                padding: const EdgeInsets.all(18.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            formattedStart,
-                                            style: const TextStyle(
-                                              color: Color(0xFF2D3748),
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15,
-                                            ),
-                                          ),
-                                        ),
-                                        if (item.endedAt == null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF6C63FF).withOpacity(0.12),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: const Text(
-                                              'ACTIVE',
-                                              style: TextStyle(
-                                                color: Color(0xFF6C63FF),
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Present: ${item.presentCount} | Absent: ${item.absentCount}',
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: NeumorphicCard(
+                              borderRadius: 16,
+                              padding: const EdgeInsets.all(18.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          formattedStart,
                                           style: const TextStyle(
-                                            color: Colors.blueGrey,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.textDark,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 15,
                                           ),
                                         ),
+                                      ),
+                                      if (item.endedAt == null)
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: badgeColor.withOpacity(0.12),
+                                            color: AppTheme.primary.withOpacity(0.12),
                                             borderRadius: BorderRadius.circular(8),
                                           ),
-                                          child: Text(
-                                            '${percent.toStringAsFixed(0)}% $turnoutStatusText',
+                                          child: const Text(
+                                            'ACTIVE',
                                             style: TextStyle(
-                                              color: badgeColor,
+                                              color: AppTheme.primary,
+                                              fontSize: 9,
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 12,
                                             ),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Present: ${item.presentCount} | Absent: ${item.absentCount}',
+                                        style: const TextStyle(
+                                          color: AppTheme.textMuted,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: badgeColor.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          '${percent.toStringAsFixed(0)}% $turnoutStatusText',
+                                          style: TextStyle(
+                                            color: badgeColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
-            ),
-          ],
-        ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
       ),
     );
   }

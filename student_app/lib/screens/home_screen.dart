@@ -52,323 +52,316 @@ class _HomeScreenState extends State<HomeScreen> {
       overallPct = 100.0; // default if no classes
     }
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFFE8EAF6), // Soft lavender top
-            Color(0xFFF0F4F8), // Soft blue-grey base
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text(
-            'My Attendance',
-            style: TextStyle(
-              color: Color(0xFF2D3748),
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-            ),
+    return Scaffold(
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        title: const Text(
+          'My Attendance',
+          style: TextStyle(
+            color: AppTheme.textDark,
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
           ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          foregroundColor: const Color(0xFF2D3748),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout_rounded, color: Color(0xFF2D3748)),
-              tooltip: 'Logout',
-              onPressed: _logout,
-            ),
-            const SizedBox(width: 8),
-          ],
         ),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            await courseProv.fetchCourses();
-          },
-          color: const Color(0xFF6C63FF),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Student Profile & Overall Stats Card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: NeumorphicCard(
-                  padding: const EdgeInsets.all(20),
-                  borderRadius: 24,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: AppTheme.textDark,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: AppTheme.textDark),
+            tooltip: 'Logout',
+            onPressed: _logout,
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await courseProv.fetchCourses();
+        },
+        color: AppTheme.primary,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Student Profile & Overall Stats Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: NeumorphicCard(
+                borderRadius: 20,
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: AppTheme.primary.withOpacity(0.08),
+                                radius: 20,
+                                child: Text(
+                                  auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'S',
+                                  style: const TextStyle(
+                                    color: AppTheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      auth.currentUser?.name ?? 'Student',
+                                      style: const TextStyle(
+                                        color: AppTheme.textDark,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      auth.currentUser?.email ?? '',
+                                      style: const TextStyle(
+                                        color: AppTheme.textMuted,
+                                        fontSize: 12,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'OVERALL STATUS',
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            overallPct >= 75.0 ? 'Good Standing' : 'Below Threshold',
+                            style: TextStyle(
+                              color: overallPct >= 75.0 ? AppTheme.success : AppTheme.danger,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Elegant progress circle indicator
+                    NeumorphicCircleProgress(
+                      value: overallPct / 100,
+                      centerText: '${overallPct.toStringAsFixed(0)}%',
+                      labelText: 'Aggregate',
+                      size: 100,
+                      progressColor: overallPct >= 75.0 ? AppTheme.primary : AppTheme.danger,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Live Session Alert Banner
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CheckinScreen()),
+                  ).then((_) {
+                    courseProv.fetchCourses(); // Reload after check-in
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(18.0),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent, // beautiful ochre highlight
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppTheme.primary, width: 1.5),
+                  ),
                   child: Row(
                     children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withOpacity(0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.bolt, color: AppTheme.primary, size: 24),
+                      ),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: const Color(0xFF6C63FF).withOpacity(0.1),
-                                  radius: 20,
-                                  child: Text(
-                                    auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'S',
-                                    style: const TextStyle(
-                                      color: Color(0xFF6C63FF),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        auth.currentUser?.name ?? 'Student',
-                                        style: const TextStyle(
-                                          color: Color(0xFF2D3748),
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        auth.currentUser?.email ?? '',
-                                        style: const TextStyle(
-                                          color: Colors.blueGrey,
-                                          fontSize: 12,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              'Overall Status',
+                          children: const [
+                            Text(
+                              'Attendance Session Live',
                               style: TextStyle(
-                                color: Colors.blueGrey,
-                                fontSize: 13,
+                                color: AppTheme.primary,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 2),
                             Text(
-                              overallPct >= 75.0 ? 'Good Standing' : 'Below Threshold',
+                              'Tap here to check-in now',
                               style: TextStyle(
-                                color: overallPct >= 75.0 ? const Color(0xFF4AD66D) : const Color(0xFFF35B7A),
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      // Radial Neumorphic Circle Progress Widget
-                      NeumorphicCircleProgress(
-                        value: overallPct / 100,
-                        centerText: '${overallPct.toStringAsFixed(0)}%',
-                        labelText: 'Attendance',
-                        size: 110,
-                        progressColor: overallPct >= 75.0 ? const Color(0xFF6C63FF) : const Color(0xFFF35B7A),
-                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.primary, size: 16),
                     ],
                   ),
                 ),
               ),
-              
-              // Live Session Alert Banner
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const CheckinScreen()),
-                    ).then((_) {
-                      courseProv.fetchCourses(); // Reload after check-in
-                    });
-                  },
-                  child: NeumorphicCard(
-                    color: const Color(0xFFF6E3A1), // butter-200
-                    borderRadius: 24,
-                    padding: const EdgeInsets.all(18.0),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2D3748).withOpacity(0.08),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.bolt, color: Color(0xFF2D3748), size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                'Attendance Session Live',
-                                style: TextStyle(
-                                  color: Color(0xFF2D3748),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                'Tap here to check-in now',
-                                style: TextStyle(
-                                  color: Color(0xFF4A5568),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF2D3748), size: 16),
-                      ],
-                    ),
-                  ),
+            ),
+            
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+              child: Text(
+                'YOUR ENROLLED COURSES',
+                style: TextStyle(
+                  color: AppTheme.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
                 ),
               ),
-              
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-                child: Text(
-                  'YOUR ENROLLED COURSES',
-                  style: TextStyle(
-                    color: Color(0xFF718096),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-   
-              // Courses ListView
-              Expanded(
-                child: courseProv.isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(Color(0xFF6C63FF)),
-                        ),
-                      )
-                    : courseProv.courses.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No courses found.',
-                              style: TextStyle(color: Colors.blueGrey),
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-                            itemCount: courseProv.courses.length,
-                            itemBuilder: (context, index) {
-                              final c = courseProv.courses[index];
-                              final isWarning = c.attendancePct < 75.0;
-                              
-                              Color percentColor = const Color(0xFF4AD66D); // soft success green
-                              if (c.attendancePct < 60.0) {
-                                percentColor = const Color(0xFFF35B7A); // soft failure red
-                              } else if (isWarning) {
-                                percentColor = const Color(0xFFFFAA00); // soft warning amber
-                              }
-   
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16.0),
-                                child: NeumorphicButton(
-                                  color: const Color(0xFFF0F4F8),
-                                  borderRadius: 20,
-                                  padding: const EdgeInsets.all(18),
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => CourseDetailScreen(course: c),
-                                      ),
-                                    );
-                                  },
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              c.courseName,
-                                              style: const TextStyle(
-                                                color: Color(0xFF2D3748),
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              c.courseCode,
-                                              style: const TextStyle(
-                                                color: Color(0xFF6C63FF),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              'Attended: ${c.presentCount} of ${c.totalSessions} classes',
-                                              style: const TextStyle(
-                                                color: Colors.blueGrey,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
+            ),
+ 
+            // Courses ListView
+            Expanded(
+              child: courseProv.isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(AppTheme.primary),
+                      ),
+                    )
+                  : courseProv.courses.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No courses found.',
+                            style: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                          itemCount: courseProv.courses.length,
+                          itemBuilder: (context, index) {
+                            final c = courseProv.courses[index];
+                            final isWarning = c.attendancePct < 75.0;
+                            
+                            Color percentColor = AppTheme.success;
+                            if (c.attendancePct < 60.0) {
+                              percentColor = AppTheme.danger;
+                            } else if (isWarning) {
+                              percentColor = AppTheme.warning;
+                            }
+ 
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: NeumorphicButton(
+                                color: AppTheme.surface,
+                                borderRadius: 16,
+                                padding: const EdgeInsets.all(18),
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => CourseDetailScreen(course: c),
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            '${c.attendancePct.toStringAsFixed(1)}%',
-                                            style: TextStyle(
-                                              color: percentColor,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 20,
+                                            c.courseName,
+                                            style: const TextStyle(
+                                              color: AppTheme.textDark,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 16,
                                             ),
                                           ),
                                           const SizedBox(height: 6),
-                                          if (isWarning)
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: percentColor.withOpacity(0.12),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Text(
-                                                'LOW',
-                                                style: TextStyle(
-                                                  color: percentColor,
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
+                                          Text(
+                                            c.courseCode,
+                                            style: const TextStyle(
+                                              color: AppTheme.textMuted,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
                                             ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Attended: ${c.presentCount} of ${c.totalSessions} classes',
+                                            style: const TextStyle(
+                                              color: AppTheme.textMuted,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
                                         ],
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '${c.attendancePct.toStringAsFixed(1)}%',
+                                          style: TextStyle(
+                                            color: percentColor,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 20,
+                                            fontFamily: 'monospace',
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        if (isWarning)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: percentColor.withOpacity(0.12),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              'LOW',
+                                              style: TextStyle(
+                                                color: percentColor,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                              );
-                            },
-                          ),
-              ),
-            ],
-          ),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
         ),
       ),
     );

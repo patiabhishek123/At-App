@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
 
+class AppTheme {
+  static const Color bg = Color(0xFFF2EFE9);       // Warm beige/off-white background
+  static const Color surface = Color(0xFFFCFAF7);  // Creamy white card surface
+  static const Color primary = Color(0xFF111111);  // Obsidian black
+  static const Color accent = Color(0xFFE4AF3A);   // Ochre yellow for primary interactive highlights
+  static const Color border = Color(0xFFEBE6DD);   // Thin divider border
+  static const Color textDark = Color(0xFF111111);
+  static const Color textMuted = Color(0xFF7A756B);
+  
+  static const Color success = Color(0xFF2E7D32);
+  static const Color danger = Color(0xFFC62828);
+  static const Color warning = Color(0xFFEF6C00);
+}
+
 class NeumorphicCard extends StatelessWidget {
   final Widget child;
   final double borderRadius;
-  final Color color;
+  final Color? color;
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
   final List<BoxShadow>? extraShadows;
@@ -11,9 +25,9 @@ class NeumorphicCard extends StatelessWidget {
   const NeumorphicCard({
     super.key,
     required this.child,
-    this.borderRadius = 24,
-    this.color = const Color(0xFFF0F4F8),
-    this.padding = const EdgeInsets.all(20),
+    this.borderRadius = 16,
+    this.color,
+    this.padding = const EdgeInsets.all(16),
     this.margin = const EdgeInsets.all(0),
     this.extraShadows,
   });
@@ -24,19 +38,15 @@ class NeumorphicCard extends StatelessWidget {
       margin: margin,
       padding: padding,
       decoration: BoxDecoration(
-        color: color,
+        color: color ?? AppTheme.surface,
         borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: AppTheme.border, width: 1.2),
         boxShadow: extraShadows ??
             [
-              const BoxShadow(
-                color: Colors.white,
-                offset: Offset(-8, -8),
-                blurRadius: 16,
-              ),
               BoxShadow(
-                color: const Color(0xFFD1D9E6).withOpacity(0.9),
-                offset: const Offset(8, 8),
-                blurRadius: 16,
+                color: AppTheme.primary.withOpacity(0.02),
+                offset: const Offset(0, 4),
+                blurRadius: 12,
               ),
             ],
       ),
@@ -49,7 +59,7 @@ class NeumorphicButton extends StatefulWidget {
   final Widget child;
   final VoidCallback? onPressed;
   final double borderRadius;
-  final Color color;
+  final Color? color;
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
 
@@ -57,9 +67,9 @@ class NeumorphicButton extends StatefulWidget {
     super.key,
     required this.child,
     this.onPressed,
-    this.borderRadius = 24,
-    this.color = Colors.white,
-    this.padding = const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+    this.borderRadius = 16,
+    this.color,
+    this.padding = const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
     this.margin = const EdgeInsets.all(0),
   });
 
@@ -73,48 +83,46 @@ class _NeumorphicButtonState extends State<NeumorphicButton> {
   @override
   Widget build(BuildContext context) {
     final bool disabled = widget.onPressed == null;
+    final Color defaultColor = widget.color ?? AppTheme.primary;
     
+    // Choose appropriate background/border treatment
+    final Color buttonColor = disabled 
+        ? defaultColor.withOpacity(0.35) 
+        : (_isPressed ? defaultColor.withOpacity(0.85) : defaultColor);
+
+    final bool isOutlineButton = defaultColor != AppTheme.primary && defaultColor != AppTheme.accent;
+
     return GestureDetector(
       onTapDown: disabled ? null : (_) => setState(() => _isPressed = true),
       onTapUp: disabled ? null : (_) => setState(() => _isPressed = false),
       onTapCancel: disabled ? null : () => setState(() => _isPressed = false),
       onTap: widget.onPressed,
-      child: AnimatedContainer(
+      child: AnimatedScale(
+        scale: _isPressed ? 0.98 : 1.0,
         duration: const Duration(milliseconds: 100),
-        margin: widget.margin,
-        padding: widget.padding,
-        decoration: BoxDecoration(
-          color: disabled ? widget.color.withOpacity(0.6) : widget.color,
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          boxShadow: disabled
-              ? []
-              : _isPressed
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFFD1D9E6).withOpacity(0.8),
-                        offset: const Offset(1, 1),
-                        blurRadius: 4,
-                      ),
-                      const BoxShadow(
-                        color: Colors.white,
-                        offset: Offset(-1, -1),
-                        blurRadius: 4,
-                      ),
-                    ]
-                  : [
-                      const BoxShadow(
-                        color: Colors.white,
-                        offset: Offset(-6, -6),
-                        blurRadius: 12,
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFFD1D9E6).withOpacity(0.9),
-                        offset: const Offset(6, 6),
-                        blurRadius: 12,
-                      ),
-                    ],
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          margin: widget.margin,
+          padding: widget.padding,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: buttonColor,
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            border: isOutlineButton 
+                ? Border.all(color: AppTheme.border, width: 1.2) 
+                : null,
+            boxShadow: disabled
+                ? []
+                : [
+                    BoxShadow(
+                      color: AppTheme.primary.withOpacity(0.04),
+                      offset: const Offset(0, 4),
+                      blurRadius: 10,
+                    ),
+                  ],
+          ),
+          child: widget.child,
         ),
-        child: widget.child,
       ),
     );
   }
@@ -132,62 +140,27 @@ class NeumorphicCircleProgress extends StatelessWidget {
     required this.value,
     required this.centerText,
     required this.labelText,
-    this.size = 140,
-    this.progressColor = const Color(0xFF6C63FF),
+    this.size = 110,
+    this.progressColor = AppTheme.primary,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F4F8),
-        shape: BoxShape.circle,
-        boxShadow: [
-          const BoxShadow(
-            color: Colors.white,
-            offset: Offset(-8, -8),
-            blurRadius: 16,
-          ),
-          BoxShadow(
-            color: const Color(0xFFD1D9E6).withOpacity(0.9),
-            offset: const Offset(8, 8),
-            blurRadius: 16,
-          ),
-        ],
-      ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(
-            width: size - 30,
-            height: size - 30,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F4F8),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.9),
-                  offset: const Offset(3, 3),
-                  blurRadius: 6,
-                ),
-                BoxShadow(
-                  color: const Color(0xFFD1D9E6).withOpacity(0.9),
-                  offset: const Offset(-3, -3),
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-          ),
           SizedBox(
-            width: size - 20,
-            height: size - 20,
+            width: size,
+            height: size,
             child: CircularProgressIndicator(
               value: value,
-              strokeWidth: 10,
-              backgroundColor: const Color(0xFFE2E8F0),
+              strokeWidth: 9,
+              backgroundColor: AppTheme.border,
               valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+              strokeCap: StrokeCap.round,
             ),
           ),
           Column(
@@ -196,19 +169,21 @@ class NeumorphicCircleProgress extends StatelessWidget {
               Text(
                 centerText,
                 style: const TextStyle(
-                  color: Color(0xFF2D3748),
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDark,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'monospace',
                 ),
               ),
               if (labelText.isNotEmpty) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
-                  labelText,
+                  labelText.toUpperCase(),
                   style: const TextStyle(
-                    color: Colors.blueGrey,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textMuted,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
                   ),
                 ),
               ],

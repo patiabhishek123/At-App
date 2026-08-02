@@ -36,21 +36,24 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
-            backgroundColor: const Color(0xFFF0F4F8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            backgroundColor: AppTheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: AppTheme.border, width: 1.5),
+            ),
             title: const Text(
               'Session Ended Summary',
-              style: TextStyle(color: Color(0xFF2D3748), fontWeight: FontWeight.bold),
+              style: TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.w900),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _summaryRow('Present Students', summary.presentCount, const Color(0xFF4AD66D)),
+                _summaryRow('Present Students', summary.presentCount, AppTheme.success),
                 const SizedBox(height: 12),
-                _summaryRow('Absent Students', summary.absentCount, const Color(0xFFF35B7A)),
+                _summaryRow('Absent Students', summary.absentCount, AppTheme.danger),
                 const SizedBox(height: 12),
-                _summaryRow('Manual Overrides', summary.overrideCount, const Color(0xFF6C63FF)),
+                _summaryRow('Manual Overrides', summary.overrideCount, AppTheme.primary),
               ],
             ),
             actions: [
@@ -61,7 +64,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                 },
                 child: const Text(
                   'Back to Schedule',
-                  style: TextStyle(color: Color(0xFF6C63FF), fontWeight: FontWeight.bold),
+                  style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -73,7 +76,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
-            backgroundColor: const Color(0xFFF35B7A),
+            backgroundColor: AppTheme.danger,
           ),
         );
       }
@@ -87,13 +90,13 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
         Text(
           label,
           style: const TextStyle(
-            color: Colors.blueGrey,
+            color: AppTheme.textMuted,
             fontWeight: FontWeight.w600,
           ),
         ),
         Text(
           value.toString(),
-          style: TextStyle(color: valueColor, fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(color: valueColor, fontWeight: FontWeight.w900, fontSize: 18),
         ),
       ],
     );
@@ -109,24 +112,27 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFFF0F4F8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: AppTheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: AppTheme.border, width: 1.5),
+          ),
           title: Text(
             'Override for ${student.name}',
-            style: const TextStyle(color: Color(0xFF2D3748), fontWeight: FontWeight.bold, fontSize: 18),
+            style: const TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.w900, fontSize: 18),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
                 value: selectedStatus,
-                dropdownColor: const Color(0xFFF0F4F8),
-                style: const TextStyle(color: Color(0xFF2D3748), fontWeight: FontWeight.w600),
+                dropdownColor: AppTheme.surface,
+                style: const TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.w700),
                 decoration: const InputDecoration(
                   labelText: 'Override Status',
-                  labelStyle: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.w600),
+                  labelStyle: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black12),
+                    borderSide: BorderSide(color: AppTheme.border),
                   ),
                 ),
                 items: const [
@@ -150,15 +156,15 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: reasonController,
-                style: const TextStyle(color: Color(0xFF2D3748)),
+                style: const TextStyle(color: AppTheme.textDark),
                 decoration: const InputDecoration(
                   labelText: 'Reason for Override (Required)',
-                  labelStyle: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.w600),
+                  labelStyle: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black12),
+                    borderSide: BorderSide(color: AppTheme.border),
                   ),
                   focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF6C63FF)),
+                    borderSide: BorderSide(color: AppTheme.primary),
                   ),
                 ),
               ),
@@ -167,7 +173,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+              child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.bold)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -188,12 +194,12 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   if (mounted) Navigator.of(ctx).pop();
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString()), backgroundColor: const Color(0xFFF35B7A)),
+                    SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.danger),
                   );
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6C63FF),
+                backgroundColor: AppTheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -213,224 +219,212 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
 
     return WillPopScope(
       onWillPop: () async => false, // Prevent accidental back navigation
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFFE8EAF6), // Soft lavender top
-              Color(0xFFF0F4F8), // Soft blue-grey base
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      child: Scaffold(
+        backgroundColor: AppTheme.bg,
+        appBar: AppBar(
+          title: Text(
+            widget.courseCode,
+            style: const TextStyle(
+              color: AppTheme.textDark,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-        ),
-        child: Scaffold(
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Text(
-              widget.courseCode,
-              style: const TextStyle(
-                color: Color(0xFF2D3748),
-                fontWeight: FontWeight.bold,
+          elevation: 0,
+          foregroundColor: AppTheme.textDark,
+          automaticallyImplyLeading: false,
+          actions: [
+            TextButton.icon(
+              onPressed: _endSession,
+              icon: const Icon(Icons.stop_circle_outlined, color: AppTheme.danger, size: 20),
+              label: const Text(
+                'End Session',
+                style: TextStyle(
+                  color: AppTheme.danger,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
               ),
             ),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            foregroundColor: const Color(0xFF2D3748),
-            automaticallyImplyLeading: false,
-            actions: [
-              TextButton.icon(
-                onPressed: _endSession,
-                icon: const Icon(Icons.stop_circle_outlined, color: Color(0xFFF35B7A), size: 20),
-                label: const Text(
-                  'End Session',
-                  style: TextStyle(
-                    color: Color(0xFFF35B7A),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
+            const SizedBox(width: 16),
+          ],
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 16),
+            Text(
+              widget.courseName,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.textMuted,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
               ),
-              const SizedBox(width: 16),
-            ],
-          ),
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 16),
-              Text(
-                widget.courseName,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.blueGrey,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Giant Code Container using NeumorphicCard
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: NeumorphicCard(
-                  borderRadius: 28,
-                  color: const Color(0xFFF6E3A1), // butter-200
-                  padding: const EdgeInsets.symmetric(vertical: 36),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'STUDENT CHECK-IN CODE',
-                        style: TextStyle(
-                          color: Color(0xFF4A5568),
-                          fontSize: 12,
-                          letterSpacing: 1.5,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        session.activeCode ?? '------',
-                        style: const TextStyle(
-                          color: Color(0xFF2D3748),
-                          fontSize: 60,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 8,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      
-                      // Countdown Progress
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF4A5568)),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Rotating in ${session.codeExpiresIn}s',
-                            style: const TextStyle(
-                              color: Color(0xFF4A5568),
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Roster Counters Banner
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+            const SizedBox(height: 24),
+            
+            // Giant Code Container using NeumorphicCard
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: NeumorphicCard(
+                borderRadius: 28,
+                color: const Color(0xFFF5E6C4), // warm butter/beige accent
+                padding: const EdgeInsets.symmetric(vertical: 36),
+                child: Column(
                   children: [
                     const Text(
-                      'LIVE ROSTER',
+                      'STUDENT CHECK-IN CODE',
                       style: TextStyle(
-                        color: Color(0xFF2D3748),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        letterSpacing: 1,
+                        color: AppTheme.textDark,
+                        fontSize: 12,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4AD66D).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 16),
+                    Text(
+                      session.activeCode ?? '------',
+                      style: const TextStyle(
+                        color: AppTheme.textDark,
+                        fontSize: 60,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 8,
                       ),
-                      child: Text(
-                        '$presentCount / ${roster.length} Present',
-                        style: const TextStyle(
-                          color: Color(0xFF4AD66D),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Countdown Progress
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.timer_outlined, size: 16, color: AppTheme.textDark),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Rotating in ${session.codeExpiresIn}s',
+                          style: const TextStyle(
+                            color: AppTheme.textDark,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              
-              // Live Student List
-              Expanded(
-                child: roster.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Waiting for students to join...',
-                          style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.w500),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        itemCount: roster.length,
-                        itemBuilder: (context, index) {
-                          final student = roster[index];
-                          final isPresent = student.status == 'present' || student.status == 'overridden_present';
-                          final isOverridden = student.status.startsWith('overridden_');
-                          
-                          Color statusColor = const Color(0xFFF35B7A); // absent
-                          if (isPresent) {
-                            statusColor = const Color(0xFF4AD66D); // present
-                          } else if (student.status == 'pending') {
-                            statusColor = Colors.blueGrey;
-                          }
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: NeumorphicCard(
-                              borderRadius: 16,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isPresent ? Icons.check_circle_rounded : (student.status == 'pending' ? Icons.hourglass_empty_rounded : Icons.cancel_rounded),
-                                    color: statusColor,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          student.name,
-                                          style: const TextStyle(
-                                            color: Color(0xFF2D3748),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          student.status.toUpperCase(),
-                                          style: TextStyle(
-                                            color: isOverridden ? const Color(0xFF6C63FF) : Colors.blueGrey,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_note_rounded, color: Color(0xFF6C63FF), size: 24),
-                                    onPressed: () => _openOverrideDialog(student),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // Roster Counters Banner
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'LIVE ROSTER',
+                    style: TextStyle(
+                      color: AppTheme.textDark,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.success.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '$presentCount / ${roster.length} Present',
+                      style: const TextStyle(
+                        color: AppTheme.success,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Live Student List
+            Expanded(
+              child: roster.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Waiting for students to join...',
+                        style: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      itemCount: roster.length,
+                      itemBuilder: (context, index) {
+                        final student = roster[index];
+                        final isPresent = student.status == 'present' || student.status == 'overridden_present';
+                        final isOverridden = student.status.startsWith('overridden_');
+                        
+                        Color statusColor = AppTheme.danger; // absent
+                        if (isPresent) {
+                          statusColor = AppTheme.success; // present
+                        } else if (student.status == 'pending') {
+                          statusColor = AppTheme.textMuted;
+                        }
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: NeumorphicCard(
+                            borderRadius: 16,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isPresent ? Icons.check_circle_rounded : (student.status == 'pending' ? Icons.hourglass_empty_rounded : Icons.cancel_rounded),
+                                  color: statusColor,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        student.name,
+                                        style: const TextStyle(
+                                          color: AppTheme.textDark,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        student.status.toUpperCase(),
+                                        style: TextStyle(
+                                          color: isOverridden ? AppTheme.primary : AppTheme.textMuted,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit_note_rounded, color: AppTheme.primary, size: 24),
+                                  onPressed: () => _openOverrideDialog(student),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
     );

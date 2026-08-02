@@ -67,292 +67,280 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final auth = context.watch<AuthProvider>();
     final session = context.watch<SessionProvider>();
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFFE8EAF6), // Soft lavender top
-            Color(0xFFF0F4F8), // Soft blue-grey base
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text(
-            'Today\'s Schedule',
-            style: TextStyle(
-              color: Color(0xFF2D3748),
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-            ),
+    return Scaffold(
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        title: const Text(
+          "Today's Schedule",
+          style: TextStyle(
+            color: AppTheme.textDark,
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
           ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          foregroundColor: const Color(0xFF2D3748),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout_rounded, color: Color(0xFF2D3748)),
-              tooltip: 'Logout',
-              onPressed: _logout,
-            ),
-            const SizedBox(width: 8),
-          ],
         ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header Profile Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: NeumorphicCard(
-                borderRadius: 24,
-                padding: const EdgeInsets.all(18),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: const Color(0xFF6C63FF).withOpacity(0.1),
-                      radius: 24,
-                      child: Text(
-                        auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'T',
-                        style: const TextStyle(
-                          color: Color(0xFF6C63FF),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: AppTheme.textDark,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: AppTheme.textDark),
+            tooltip: 'Logout',
+            onPressed: _logout,
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header Profile Card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: NeumorphicCard(
+              borderRadius: 20,
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: AppTheme.primary.withOpacity(0.08),
+                    radius: 24,
+                    child: Text(
+                      auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'T',
+                      style: const TextStyle(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome, ${auth.currentUser?.name ?? 'Teacher'}',
+                          style: const TextStyle(
+                            color: AppTheme.textDark,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Welcome, ${auth.currentUser?.name ?? 'Teacher'}',
-                            style: const TextStyle(
-                              color: Color(0xFF2D3748),
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        const SizedBox(height: 2),
+                        Text(
+                          auth.currentUser?.email ?? '',
+                          style: const TextStyle(
+                            color: AppTheme.textMuted,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            auth.currentUser?.email ?? '',
-                            style: const TextStyle(
-                              color: Colors.blueGrey,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            
-            const SizedBox(height: 8),
+          ),
+          
+          const SizedBox(height: 8),
 
-            // Assigned Sections List
-            Expanded(
-              child: session.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Color(0xFF6C63FF)),
-                      ),
-                    )
-                  : session.sections.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No courses assigned for this term.',
-                            style: TextStyle(color: Colors.blueGrey, fontSize: 15),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                          itemCount: session.sections.length,
-                          itemBuilder: (context, index) {
-                            final sec = session.sections[index];
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 20),
-                              child: NeumorphicCard(
-                                borderRadius: 24,
-                                padding: const EdgeInsets.all(20.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            sec.courseName,
-                                            style: const TextStyle(
-                                              color: Color(0xFF2D3748),
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+          // Assigned Sections List
+          Expanded(
+            child: session.isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation(AppTheme.primary),
+                    ),
+                  )
+                : session.sections.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No courses assigned for this term.',
+                          style: TextStyle(color: AppTheme.textMuted, fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        itemCount: session.sections.length,
+                        itemBuilder: (context, index) {
+                          final sec = session.sections[index];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: NeumorphicCard(
+                              borderRadius: 20,
+                              padding: const EdgeInsets.all(20.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          sec.courseName,
+                                          style: const TextStyle(
+                                            color: AppTheme.textDark,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w800,
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFE2E8F0),
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: Text(
-                                            sec.courseCode,
-                                            style: const TextStyle(
-                                              color: Color(0xFF6C63FF),
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Term: ${sec.term}',
-                                      style: const TextStyle(
-                                        color: Colors.blueGrey,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
                                       ),
-                                    ),
-                                    if (sec.classroomBssid != null) ...[
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.wifi_tethering_rounded, size: 16, color: Color(0xFF6C63FF)),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            'BSSID: ${sec.classroomBssid}',
-                                            style: const TextStyle(
-                                              color: Colors.blueGrey,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primary.withOpacity(0.08),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          sec.courseCode,
+                                          style: const TextStyle(
+                                            color: AppTheme.primary,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 12,
                                           ),
-                                        ],
+                                        ),
                                       ),
                                     ],
-                                    const SizedBox(height: 24),
-                                    
-                                    // Action buttons row
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Term: ${sec.term}',
+                                    style: const TextStyle(
+                                      color: AppTheme.textMuted,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (sec.classroomBssid != null) ...[
+                                    const SizedBox(height: 8),
                                     Row(
                                       children: [
-                                        // Metrics Button
-                                        Expanded(
-                                          child: NeumorphicButton(
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            borderRadius: 12,
-                                            color: const Color(0xFFF0F4F8),
-                                            onPressed: () {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (_) => DashboardScreen(
-                                                    sectionId: sec.sectionId,
-                                                    courseName: sec.courseName,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons.analytics_outlined, size: 16, color: Color(0xFF6C63FF)),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  'Metrics',
-                                                  style: TextStyle(
-                                                    color: Color(0xFF2D3748),
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        
-                                        // History Button
-                                        Expanded(
-                                          child: NeumorphicButton(
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            borderRadius: 12,
-                                            color: const Color(0xFFF0F4F8),
-                                            onPressed: () {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (_) => HistoryScreen(
-                                                    sectionId: sec.sectionId,
-                                                    courseName: sec.courseName,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons.history_toggle_off, size: 16, color: Color(0xFF6C63FF)),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  'History',
-                                                  style: TextStyle(
-                                                    color: Color(0xFF2D3748),
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        
-                                        // Start Button
-                                        Expanded(
-                                          child: NeumorphicButton(
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            borderRadius: 12,
-                                            color: const Color(0xFF6C63FF),
-                                            onPressed: () => _startAttendance(sec.sectionId, sec.courseName, sec.courseCode),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons.play_arrow_rounded, size: 16, color: Colors.white),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  'Start',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                        const Icon(Icons.wifi_tethering_rounded, size: 16, color: AppTheme.textMuted),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'BSSID: ${sec.classroomBssid}',
+                                          style: const TextStyle(
+                                            color: AppTheme.textMuted,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ],
-                                ),
+                                  const SizedBox(height: 24),
+                                  
+                                  // Action buttons row
+                                  Row(
+                                    children: [
+                                      // Metrics Button
+                                      Expanded(
+                                        child: NeumorphicButton(
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          borderRadius: 12,
+                                          color: AppTheme.surface,
+                                          onPressed: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (_) => DashboardScreen(
+                                                  sectionId: sec.sectionId,
+                                                  courseName: sec.courseName,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: const [
+                                              Icon(Icons.analytics_outlined, size: 16, color: AppTheme.primary),
+                                              SizedBox(width: 6),
+                                              Text(
+                                                'Metrics',
+                                                style: TextStyle(
+                                                  color: AppTheme.textDark,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      
+                                      // History Button
+                                      Expanded(
+                                        child: NeumorphicButton(
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          borderRadius: 12,
+                                          color: AppTheme.surface,
+                                          onPressed: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (_) => HistoryScreen(
+                                                  sectionId: sec.sectionId,
+                                                  courseName: sec.courseName,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: const [
+                                              Icon(Icons.history_toggle_off, size: 16, color: AppTheme.primary),
+                                              SizedBox(width: 6),
+                                              Text(
+                                                'History',
+                                                style: TextStyle(
+                                                  color: AppTheme.textDark,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      
+                                      // Start Button
+                                      Expanded(
+                                        child: NeumorphicButton(
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          borderRadius: 12,
+                                          color: AppTheme.primary,
+                                          onPressed: () => _startAttendance(sec.sectionId, sec.courseName, sec.courseCode),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: const [
+                                              Icon(Icons.play_arrow_rounded, size: 16, color: Colors.white),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                'Start',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
-            ),
-          ],
-        ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
       ),
     );
   }
