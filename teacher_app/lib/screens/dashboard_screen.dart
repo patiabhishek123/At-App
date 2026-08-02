@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/session_provider.dart';
 import '../models/roster.dart';
+import '../widgets/neumorphic.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String sectionId;
@@ -37,34 +38,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _exportCSV() {
-    // Mock export dialog
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Export Attendance', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFFF0F4F8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        title: const Text(
+          'Export Attendance',
+          style: TextStyle(
+            color: Color(0xFF2D3748),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'Exporting attendance records for ${widget.courseName} as a CSV spreadsheet.',
-          style: const TextStyle(color: Colors.blueGrey),
+          style: const TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.w600),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.blueGrey)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('CSV successfully generated and saved to Downloads'),
-                  backgroundColor: Color(0xFF10B981),
+                SnackBar(
+                  content: const Text('CSV successfully generated and saved to Downloads'),
+                  backgroundColor: const Color(0xFF4AD66D),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF0F172A),
+              backgroundColor: const Color(0xFF6C63FF),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Export', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -75,143 +92,187 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Target threshold is 75%
     const double threshold = 75.0;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      appBar: AppBar(
-        title: const Text('Course Metrics'),
-        backgroundColor: const Color(0xFF1E293B),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.file_download_rounded),
-            tooltip: 'Export CSV',
-            onPressed: _exportCSV,
-          ),
-        ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFFE8EAF6),
+            Color(0xFFF0F4F8),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            color: const Color(0xFF1E293B),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.courseName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Minimum Attendance Target: 75%',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text(
+            'Course Metrics',
+            style: TextStyle(
+              color: Color(0xFF2D3748),
+              fontWeight: FontWeight.bold,
             ),
           ),
-          Expanded(
-            child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Colors.white),
+          backgroundColor: Colors.transparent,
+          foregroundColor: const Color(0xFF2D3748),
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.file_download_rounded),
+              tooltip: 'Export CSV',
+              onPressed: _exportCSV,
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Top Course Title Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: NeumorphicCard(
+                borderRadius: 20,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.courseName,
+                      style: const TextStyle(
+                        color: Color(0xFF2D3748),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  )
-                : _list.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No students enrolled in this section.',
-                          style: TextStyle(color: Colors.blueGrey[400]),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _list.length,
-                        itemBuilder: (context, index) {
-                          final item = _list[index];
-                          final isBreached = item.attendancePct < threshold;
-                          
-                          Color color = const Color(0xFF10B981);
-                          if (item.attendancePct < threshold - 15) {
-                            color = const Color(0xFFEF4444);
-                          } else if (isBreached) {
-                            color = const Color(0xFFF59E0B);
-                          }
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Minimum Attendance Target: 75%',
+                      style: TextStyle(
+                        color: Colors.blueGrey,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Student List
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(Color(0xFF6C63FF)),
+                      ),
+                    )
+                  : _list.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No students enrolled in this section.',
+                            style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          itemCount: _list.length,
+                          itemBuilder: (context, index) {
+                            final item = _list[index];
+                            final isBreached = item.attendancePct < threshold;
+                            
+                            Color badgeColor = const Color(0xFF4AD66D); // healthy
+                            String warningText = 'HEALTHY';
+                            if (item.attendancePct < threshold - 15) {
+                              badgeColor = const Color(0xFFF35B7A); // critical warning
+                              warningText = 'CRITICAL';
+                            } else if (isBreached) {
+                              badgeColor = const Color(0xFFFFAA00); // warning
+                              warningText = 'WARNING';
+                            }
 
-                          return Card(
-                            color: const Color(0xFF1E293B),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              title: Text(
-                                item.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16.0),
+                              child: NeumorphicCard(
+                                borderRadius: 16,
+                                padding: const EdgeInsets.all(16.0),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.name,
+                                            style: const TextStyle(
+                                              color: Color(0xFF2D3748),
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item.email,
+                                            style: const TextStyle(
+                                              color: Colors.blueGrey,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Attended: ${item.presentCount} of ${item.totalSessions} sessions',
+                                            style: const TextStyle(
+                                              color: Colors.blueGrey,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '${item.attendancePct.toStringAsFixed(1)}%',
+                                          style: const TextStyle(
+                                            color: Color(0xFF2D3748),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: badgeColor.withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            warningText,
+                                            style: TextStyle(
+                                              color: badgeColor,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 4),
-                                  Text(item.email, style: const TextStyle(color: Colors.blueGrey, fontSize: 13)),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Attended: ${item.presentCount} of ${item.totalSessions} sessions',
-                                    style: const TextStyle(color: Colors.blueGrey, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                              trailing: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${item.attendancePct.toStringAsFixed(1)}%',
-                                    style: TextStyle(
-                                      color: color,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (isBreached)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: color.withOpacity(0.15),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'WARNING',
-                                        style: TextStyle(
-                                          color: color,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-          ),
-        ],
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }

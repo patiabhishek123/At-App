@@ -28,18 +28,18 @@ class AtAppStudent extends StatelessWidget {
       title: 'AtApp Student',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
-        primaryColor: Colors.white,
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.white,
-          secondary: Colors.blueGrey,
-          background: Color(0xFF0F172A),
-          surface: Color(0xFF1E293B),
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF0F4F8),
+        primaryColor: const Color(0xFF6C63FF),
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF6C63FF),
+          secondary: Color(0xFF2D3748),
+          background: Color(0xFFF0F4F8),
+          surface: Colors.white,
         ),
         textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white70),
-          bodyMedium: TextStyle(color: Colors.white60),
+          bodyLarge: TextStyle(color: Color(0xFF2D3748)),
+          bodyMedium: TextStyle(color: Color(0xFF4A5568)),
         ),
       ),
       home: const AuthWrapper(),

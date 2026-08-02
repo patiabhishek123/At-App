@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/neumorphic.dart';
 import 'schedule_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -34,8 +35,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: const Color(0xFFF35B7A), // soft pink-red status
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
         );
       }
@@ -53,157 +55,189 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthProvider>().isLoading;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Dark slate
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Premium Logo styling
-              Icon(
-                Icons.check_circle_outline_rounded,
-                size: 80,
-                color: Colors.white,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'AtApp Teacher',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Sign in to manage class attendance sessions',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.blueGrey[300],
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 40),
-              
-              // Login Card
-              Container(
-                padding: const EdgeInsets.all(24.0),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B), // Card bg
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFFC7D2FE), // Soft Lavender/Indigo
+            Color(0xFFE0E7FF), // Soft violet
+            Color(0xFFF0F4F8), // Soft light-blueish grey
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Soft Neumorphic Icon Container
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4F8),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        const BoxShadow(
+                          color: Colors.white,
+                          offset: Offset(-6, -6),
+                          blurRadius: 12,
+                        ),
+                        BoxShadow(
+                          color: const Color(0xFFD1D9E6).withOpacity(0.8),
+                          offset: const Offset(6, 6),
+                          blurRadius: 12,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        style: const TextStyle(color: Colors.white),
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email Address',
-                          labelStyle: const TextStyle(color: Colors.blueGrey),
-                          prefixIcon: const Icon(Icons.email, color: Colors.blueGrey),
-                          filled: true,
-                          fillColor: const Color(0xFF0F172A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.white),
-                          ),
-                        ),
-                        validator: (val) {
-                          if (val == null || val.trim().isEmpty) {
-                            return 'Email is required';
-                          }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val.trim())) {
-                            return 'Enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Password Field
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          labelStyle: const TextStyle(color: Colors.blueGrey),
-                          prefixIcon: const Icon(Icons.lock, color: Colors.blueGrey),
-                          filled: true,
-                          fillColor: const Color(0xFF0F172A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.white),
-                          ),
-                        ),
-                        validator: (val) {
-                          if (val == null || val.isEmpty) {
-                            return 'Password is required';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Submit Button
-                      ElevatedButton(
-                        onPressed: isLoading ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF0F172A),
-                          disabledBackgroundColor: Colors.blueGrey[800],
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(Colors.white),
-                                ),
-                              )
-                            : const Text(
-                                'Sign In',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ],
+                    child: const Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 60,
+                      color: Color(0xFF6C63FF),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 32),
+                const Text(
+                  'AtApp Teacher',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF2D3748),
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Inter',
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Sign in to manage class attendance sessions',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF718096),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                
+                // Neumorphic Soft UI Form Card
+                NeumorphicCard(
+                  color: const Color(0xFFF0F4F8),
+                  borderRadius: 28,
+                  padding: const EdgeInsets.all(24.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Email Field
+                        TextFormField(
+                          controller: _emailController,
+                          style: const TextStyle(color: Color(0xFF2D3748)),
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: 'Email Address',
+                            labelStyle: const TextStyle(color: Color(0xFF718096), fontWeight: FontWeight.w600),
+                            prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF6C63FF)),
+                            filled: true,
+                            fillColor: const Color(0xFFE6EDF5),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 1.5),
+                            ),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Email is required';
+                            }
+                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val.trim())) {
+                              return 'Enter a valid email';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Password Field
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          style: const TextStyle(color: Color(0xFF2D3748)),
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            labelStyle: const TextStyle(color: Color(0xFF718096), fontWeight: FontWeight.w600),
+                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF6C63FF)),
+                            filled: true,
+                            fillColor: const Color(0xFFE6EDF5),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 1.5),
+                            ),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.isEmpty) {
+                              return 'Password is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        // Neumorphic Button
+                        NeumorphicButton(
+                          color: const Color(0xFF6C63FF),
+                          borderRadius: 16,
+                          onPressed: isLoading ? null : _submit,
+                          child: isLoading
+                              ? const Center(
+                                  child: SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation(Colors.white),
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'Sign In',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
