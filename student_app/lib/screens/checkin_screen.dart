@@ -81,7 +81,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF0F4F8),
+                          color: const Color(0xFFF6E3A1), // butter-200
                           shape: BoxShape.circle,
                           boxShadow: [
                             const BoxShadow(
@@ -99,7 +99,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                         child: const Icon(
                           Icons.qr_code_scanner_rounded,
                           size: 60,
-                          color: Color(0xFF6C63FF),
+                          color: Color(0xFF2D3748),
                         ),
                       ),
                     ),

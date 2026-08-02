@@ -274,13 +274,14 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: NeumorphicCard(
                   borderRadius: 28,
+                  color: const Color(0xFFF6E3A1), // butter-200
                   padding: const EdgeInsets.symmetric(vertical: 36),
                   child: Column(
                     children: [
                       const Text(
                         'STUDENT CHECK-IN CODE',
                         style: TextStyle(
-                          color: Colors.blueGrey,
+                          color: Color(0xFF4A5568),
                           fontSize: 12,
                           letterSpacing: 1.5,
                           fontWeight: FontWeight.bold,
@@ -290,7 +291,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       Text(
                         session.activeCode ?? '------',
                         style: const TextStyle(
-                          color: Color(0xFF6C63FF),
+                          color: Color(0xFF2D3748),
                           fontSize: 60,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 8,
@@ -302,12 +303,12 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.timer_outlined, size: 16, color: Colors.blueGrey),
+                          const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF4A5568)),
                           const SizedBox(width: 8),
                           Text(
                             'Rotating in ${session.codeExpiresIn}s',
                             style: const TextStyle(
-                              color: Colors.blueGrey,
+                              color: Color(0xFF4A5568),
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),

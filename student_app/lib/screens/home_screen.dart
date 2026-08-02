@@ -193,32 +193,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       courseProv.fetchCourses(); // Reload after check-in
                     });
                   },
-                  child: Container(
+                  child: NeumorphicCard(
+                    color: const Color(0xFFF6E3A1), // butter-200
+                    borderRadius: 24,
                     padding: const EdgeInsets.all(18.0),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6C63FF), Color(0xFF8EC5FC)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF6C63FF).withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
-                          decoration: const BoxDecoration(
-                            color: Colors.white24,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2D3748).withOpacity(0.08),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.bolt, color: Colors.white, size: 24),
+                          child: const Icon(Icons.bolt, color: Color(0xFF2D3748), size: 24),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -228,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Text(
                                 'Attendance Session Live',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: Color(0xFF2D3748),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
@@ -237,15 +224,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               Text(
                                 'Tap here to check-in now',
                                 style: TextStyle(
-                                  color: Colors.white84,
+                                  color: Color(0xFF4A5568),
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                        const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF2D3748), size: 16),
                       ],
                     ),
                   ),
