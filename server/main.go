@@ -96,6 +96,34 @@ func main() {
 	notificationConsumer := notification.NewConsumer(brokers, notifier, dbConn)
 	notificationConsumer.Start(consumerCtx)
 
+	// 8b. Start Background Data Pruning Loop
+	go func() {
+		// Run initial prune
+		pruned, err := verifService.PruneRawVerificationData(context.Background(), 24*time.Hour)
+		if err != nil {
+			log.Printf("[Pruning Job] Error pruning raw verification data: %v", err)
+		} else if pruned > 0 {
+			log.Printf("[Pruning Job] Successfully pruned %d verification attempt raw location details on startup", pruned)
+		}
+
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-consumerCtx.Done():
+				return
+			case <-ticker.C:
+				pruned, err := verifService.PruneRawVerificationData(context.Background(), 24*time.Hour)
+				if err != nil {
+					log.Printf("[Pruning Job] Error pruning raw verification data: %v", err)
+				} else if pruned > 0 {
+					log.Printf("[Pruning Job] Successfully pruned %d verification attempt raw location details", pruned)
+				}
+			}
+		}
+	}()
+
+
 	// 8. Router and middlewares
 	r := chi.NewRouter()
 

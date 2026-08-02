@@ -3,9 +3,11 @@ package verification
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"atapp/db"
@@ -63,6 +65,29 @@ func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string
 		return CheckinResult{}, err
 	}
 
+	// Fetch College Verification Policy
+	var policyRaw []byte
+	err = tx.QueryRowContext(ctx, "SELECT verification_policy FROM colleges WHERE id = $1", collegeID).Scan(&policyRaw)
+	if err != nil {
+		return CheckinResult{}, fmt.Errorf("failed to load college verification policy: %w", err)
+	}
+
+	var policy struct {
+		NRequired   int `json:"n_required"`
+		MaxAttempts int `json:"max_attempts"`
+	}
+	policy.NRequired = 3   // Default: All 3 signals required
+	policy.MaxAttempts = 3 // Default: 3 attempts limit
+	if len(policyRaw) > 0 && string(policyRaw) != "{}" {
+		_ = json.Unmarshal(policyRaw, &policy)
+	}
+	if policy.NRequired <= 0 {
+		policy.NRequired = 3
+	}
+	if policy.MaxAttempts <= 0 {
+		policy.MaxAttempts = 3
+	}
+
 	// 1. Resolve active session from student's enrollments
 	query := `
 		SELECT 
@@ -90,6 +115,20 @@ func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string
 			return CheckinResult{}, errors.New("no active class session found for your enrolled courses")
 		}
 		return CheckinResult{}, fmt.Errorf("failed to lookup active session: %w", err)
+	}
+
+	// Rate-limiting check
+	rateKey := fmt.Sprintf("rate:student:%s:session:%s", studentID, sessionID)
+	attemptsStr, err := s.rdb.Get(ctx, rateKey).Result()
+	if err == nil {
+		attempts, _ := strconv.Atoi(attemptsStr)
+		if attempts >= policy.MaxAttempts {
+			reason := "rate limit exceeded: too many failed check-in attempts for this session"
+			return CheckinResult{
+				Result:          "rejected",
+				RejectionReason: &reason,
+			}, nil
+		}
 	}
 
 	// Check if already checked in
@@ -135,19 +174,32 @@ func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string
 		geofenceMatch = (dist <= *targetRadius)
 	}
 
-	// Compile results
+	// Compile results based on verification policy requirement count N
+	matchedCount := 0
+	if codeMatch {
+		matchedCount++
+	}
+	if bssidMatch {
+		matchedCount++
+	}
+	if geofenceMatch {
+		matchedCount++
+	}
+
 	result := "accepted"
 	var rejectionReason string
 
-	if !codeMatch {
+	if matchedCount < policy.NRequired {
 		result = "rejected"
-		rejectionReason = "invalid or expired class code"
-	} else if !bssidMatch {
-		result = "rejected"
-		rejectionReason = "not connected to the classroom Wi-Fi network"
-	} else if !geofenceMatch {
-		result = "rejected"
-		rejectionReason = "outside the classroom geofence boundary"
+		if !codeMatch {
+			rejectionReason = "invalid or expired class code"
+		} else if !bssidMatch {
+			rejectionReason = "not connected to the classroom Wi-Fi network"
+		} else if !geofenceMatch {
+			rejectionReason = "outside the classroom geofence boundary"
+		} else {
+			rejectionReason = "insufficient validation signals"
+		}
 	}
 
 	// 5. Log attempt
@@ -194,6 +246,14 @@ func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string
 		return CheckinResult{}, err
 	}
 
+	// Update Rate Limiting Key status in Redis
+	if result == "accepted" {
+		s.rdb.Del(ctx, rateKey)
+	} else {
+		s.rdb.Incr(ctx, rateKey)
+		s.rdb.Expire(ctx, rateKey, 15*time.Minute)
+	}
+
 	// 7. Publish event
 	if result == "accepted" {
 		_ = s.eventBus.Publish(ctx, "attendance.recorded", recordID, event.AttendanceRecordedEvent{
@@ -218,3 +278,23 @@ func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string
 		Result: result,
 	}, nil
 }
+
+// PruneRawVerificationData zeroes out raw BSSID and GPS fields older than the retention window.
+func (s *Service) PruneRawVerificationData(ctx context.Context, retentionWindow time.Duration) (int64, error) {
+	cutoff := time.Now().Add(-retentionWindow)
+	query := `
+		UPDATE verification_attempts
+		SET raw_bssid = NULL, raw_gps_lat = NULL, raw_gps_lng = NULL
+		WHERE submitted_at < $1 AND (raw_bssid IS NOT NULL OR raw_gps_lat IS NOT NULL OR raw_gps_lng IS NOT NULL)
+	`
+	res, err := s.dbConn.ExecContext(ctx, query, cutoff)
+	if err != nil {
+		return 0, fmt.Errorf("failed to prune raw verification data: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return rows, nil
+}
+
