@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: () async {
           await courseProv.fetchCourses();
         },
-        color: Colors.emeraldAccent,
+        color: Colors.white,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -67,12 +67,12 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: Colors.emeraldAccent[400],
+                    backgroundColor: const Color(0xFF334155),
                     radius: 24,
                     child: Text(
                       auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'S',
                       style: const TextStyle(
-                        color: Color(0xFF0F172A),
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                       ),
@@ -121,12 +121,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF059669), Color(0xFF10B981)], // Emerald gradients
+                      colors: [Color(0xFF312E81), Color(0xFF4F46E5)], // Premium Indigo gradient
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.emerald.withOpacity(0.3),
+                        color: Colors.indigo.withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -178,13 +178,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
+ 
             // Courses ListView
             Expanded(
               child: courseProv.isLoading
                   ? const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Colors.emeraldAccent),
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
                       ),
                     )
                   : courseProv.courses.isEmpty
@@ -201,18 +201,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             final c = courseProv.courses[index];
                             final isWarning = c.attendancePct < 75.0;
                             
-                            Color percentColor = Colors.emeraldAccent[400]!;
+                            Color percentColor = const Color(0xFF10B981);
                             if (c.attendancePct < 60.0) {
-                              percentColor = Colors.redAccent;
+                              percentColor = const Color(0xFFEF4444);
                             } else if (isWarning) {
-                              percentColor = Colors.orangeAccent;
+                              percentColor = const Color(0xFFF59E0B);
                             }
-
+ 
                             return Card(
                               color: const Color(0xFF1E293B),
                               margin: const EdgeInsets.only(bottom: 12),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12),
                               ),
                               child: ListTile(
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -229,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       c.courseCode,
-                                      style: TextStyle(color: Colors.emeraldAccent[400], fontSize: 12, fontWeight: FontWeight.w600),
+                                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -255,13 +255,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: Colors.orangeAccent.withOpacity(0.15),
+                                          color: const Color(0xFFF59E0B).withOpacity(0.15),
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: const Text(
                                           'LOW',
                                           style: TextStyle(
-                                            color: Colors.orangeAccent,
+                                            color: Color(0xFFF59E0B),
                                             fontSize: 9,
                                             fontWeight: FontWeight.bold,
                                           ),

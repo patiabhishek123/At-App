@@ -89,12 +89,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.emeraldAccent[400],
+                  backgroundColor: const Color(0xFF334155),
                   radius: 24,
                   child: Text(
                     auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'T',
                     style: const TextStyle(
-                      color: Color(0xFF0F172A),
+                      color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                     ),
@@ -135,7 +135,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             child: session.isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Colors.emeraldAccent),
+                      valueColor: AlwaysStoppedAnimation(Colors.white),
                     ),
                   )
                 : session.sections.isEmpty
@@ -182,10 +182,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                           color: const Color(0xFF0F172A),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
-                                        child: Text(
+                                        child: const Text(
                                           sec.courseCode,
                                           style: TextStyle(
-                                            color: Colors.emeraldAccent[400],
+                                            color: Colors.white70,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12,
                                           ),
@@ -273,7 +273,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                       ElevatedButton(
                                         onPressed: () => _startAttendance(sec.sectionId, sec.courseName, sec.courseCode),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.emeraldAccent[400],
+                                          backgroundColor: Colors.white,
                                           foregroundColor: const Color(0xFF0F172A),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(10),

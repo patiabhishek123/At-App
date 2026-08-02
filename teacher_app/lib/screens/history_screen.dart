@@ -67,7 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: _loading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Colors.emeraldAccent),
+                      valueColor: AlwaysStoppedAnimation(Colors.white),
                     ),
                   )
                 : _history.isEmpty
@@ -86,6 +86,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           
                           int total = item.presentCount + item.absentCount;
                           double percent = total > 0 ? (item.presentCount / total) * 100 : 0.0;
+
+                          Color turnoutColor = const Color(0xFF10B981);
+                          if (percent < 60.0) {
+                            turnoutColor = const Color(0xFFEF4444);
+                          } else if (percent < 75.0) {
+                            turnoutColor = const Color(0xFFF59E0B);
+                          }
 
                           return Card(
                             color: const Color(0xFF1E293B),
@@ -115,13 +122,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: Colors.redAccent.withOpacity(0.2),
+                                            color: Colors.blueAccent.withOpacity(0.2),
                                             borderRadius: BorderRadius.circular(4),
                                           ),
                                           child: const Text(
                                             'ACTIVE',
                                             style: TextStyle(
-                                              color: Colors.redAccent,
+                                              color: Colors.blueAccent,
                                               fontSize: 9,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -143,7 +150,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       Text(
                                         '${percent.toStringAsFixed(0)}% Turnout',
                                         style: TextStyle(
-                                          color: percent >= 75 ? Colors.emeraldAccent[400] : Colors.orangeAccent,
+                                          color: turnoutColor,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
                                         ),

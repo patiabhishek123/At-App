@@ -76,8 +76,8 @@ class CourseDetailScreen extends StatelessWidget {
                       ),
                       Text(
                         'Attended: ${course.presentCount}',
-                        style: TextStyle(
-                          color: Colors.emeraldAccent[400],
+                        style: const TextStyle(
+                          color: Color(0xFF10B981),
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -169,8 +169,8 @@ class CourseDetailScreen extends StatelessWidget {
                         FlSpot(spots.length.toDouble() - 1, targetPct),
                       ],
                       isCurved: false,
-                      color: Colors.redAccent.withOpacity(0.4),
-                      strokeWidth: 1.5,
+                      color: const Color(0xFFEF4444).withOpacity(0.4),
+                      barWidth: 1.5,
                       dashArray: [5, 5],
                       dotData: const FlDotData(show: false),
                     ),
@@ -178,13 +178,13 @@ class CourseDetailScreen extends StatelessWidget {
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
-                      color: isWarning ? Colors.orangeAccent : Colors.emeraldAccent[400],
+                      color: isWarning ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
                       barWidth: 4,
                       isStrokeCapRound: true,
                       dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: (isWarning ? Colors.orangeAccent : Colors.emeraldAccent[400])!.withOpacity(0.1),
+                        color: (isWarning ? const Color(0xFFF59E0B) : const Color(0xFF10B981)).withOpacity(0.1),
                       ),
                     ),
                   ],
@@ -197,17 +197,17 @@ class CourseDetailScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isWarning ? Colors.redAccent.withOpacity(0.08) : Colors.emeraldAccent.withOpacity(0.05),
+                color: isWarning ? const Color(0xFFEF4444).withOpacity(0.08) : const Color(0xFF10B981).withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isWarning ? Colors.redAccent.withOpacity(0.2) : Colors.emeraldAccent.withOpacity(0.1),
+                  color: isWarning ? const Color(0xFFEF4444).withOpacity(0.2) : const Color(0xFF10B981).withOpacity(0.1),
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
                     isWarning ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
-                    color: isWarning ? Colors.orangeAccent : Colors.emeraldAccent[400],
+                    color: isWarning ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
                     size: 28,
                   ),
                   const SizedBox(width: 16),
@@ -218,7 +218,7 @@ class CourseDetailScreen extends StatelessWidget {
                         Text(
                           isWarning ? 'Attention Required' : 'Status Healthy',
                           style: TextStyle(
-                            color: isWarning ? Colors.orangeAccent : Colors.emeraldAccent[400],
+                            color: isWarning ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),

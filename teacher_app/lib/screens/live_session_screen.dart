@@ -45,9 +45,9 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _summaryRow('Present Students', summary.presentCount, Colors.emeraldAccent),
+                _summaryRow('Present Students', summary.presentCount, const Color(0xFF10B981)),
                 const SizedBox(height: 8),
-                _summaryRow('Absent Students', summary.absentCount, Colors.redAccent),
+                _summaryRow('Absent Students', summary.absentCount, const Color(0xFFEF4444)),
                 const SizedBox(height: 8),
                 _summaryRow('Manual Overrides', summary.overrideCount, Colors.blueAccent),
               ],
@@ -60,7 +60,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                 },
                 child: const Text(
                   'Back to Schedule',
-                  style: TextStyle(color: Colors.emeraldAccent, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -144,7 +144,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   labelText: 'Reason for Override (Required)',
                   labelStyle: TextStyle(color: Colors.blueGrey),
                   focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.emeraldAccent),
+                    borderSide: BorderSide(color: Colors.white),
                   ),
                 ),
               ),
@@ -178,8 +178,11 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   );
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.emeraldAccent[400]),
-              child: const Text('Save', style: TextStyle(color: Color(0xFF0F172A))),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF0F172A),
+              ),
+              child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -233,7 +236,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.emeraldAccent.withOpacity(0.3), width: 1),
+                border: Border.all(color: Colors.white24, width: 1),
               ),
               child: Column(
                 children: [
@@ -262,12 +265,12 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.timer_outlined, size: 16, color: Colors.emeraldAccent[400]),
+                      const Icon(Icons.timer_outlined, size: 16, color: Colors.blueGrey),
                       const SizedBox(width: 8),
                       Text(
                         'Rotating in ${session.codeExpiresIn}s',
-                        style: TextStyle(
-                          color: Colors.emeraldAccent[400],
+                        style: const TextStyle(
+                          color: Colors.blueGrey,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -303,8 +306,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     ),
                     child: Text(
                       '$presentCount / ${roster.length} Present',
-                      style: TextStyle(
-                        color: Colors.emeraldAccent[400],
+                      style: const TextStyle(
+                        color: Color(0xFF10B981),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -331,9 +334,9 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                         final isPresent = student.status == 'present' || student.status == 'overridden_present';
                         final isOverridden = student.status.startsWith('overridden_');
                         
-                        Color statusColor = Colors.redAccent;
+                        Color statusColor = const Color(0xFFEF4444);
                         if (isPresent) {
-                          statusColor = Colors.emeraldAccent[400]!;
+                          statusColor = const Color(0xFF10B981);
                         } else if (student.status == 'pending') {
                           statusColor = Colors.blueGrey;
                         }

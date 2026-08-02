@@ -58,12 +58,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('CSV successfully generated and saved to Downloads'),
-                  backgroundColor: Colors.emerald,
+                  backgroundColor: Color(0xFF10B981),
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.emeraldAccent[400]),
-            child: const Text('Export', style: TextStyle(color: Color(0xFF0F172A))),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF0F172A),
+            ),
+            child: const Text('Export', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -107,10 +110,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Minimum Attendance Target: ${threshold.toStringAsFixed(0)}%',
+                const Text(
+                  'Minimum Attendance Target: 75%',
                   style: TextStyle(
-                    color: Colors.emeraldAccent[400],
+                    color: Colors.white70,
                     fontSize: 14,
                   ),
                 ),
@@ -121,7 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: _loading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Colors.emeraldAccent),
+                      valueColor: AlwaysStoppedAnimation(Colors.white),
                     ),
                   )
                 : _list.isEmpty
@@ -138,11 +141,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           final item = _list[index];
                           final isBreached = item.attendancePct < threshold;
                           
-                          Color color = Colors.emeraldAccent[400]!;
+                          Color color = const Color(0xFF10B981);
                           if (item.attendancePct < threshold - 15) {
-                            color = Colors.redAccent;
+                            color = const Color(0xFFEF4444);
                           } else if (isBreached) {
-                            color = Colors.orangeAccent;
+                            color = const Color(0xFFF59E0B);
                           }
 
                           return Card(
@@ -189,13 +192,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: Colors.redAccent.withOpacity(0.2),
+                                        color: color.withOpacity(0.15),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         'WARNING',
                                         style: TextStyle(
-                                          color: Colors.redAccent,
+                                          color: color,
                                           fontSize: 9,
                                           fontWeight: FontWeight.bold,
                                         ),

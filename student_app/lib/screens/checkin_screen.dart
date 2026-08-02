@@ -100,7 +100,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: Colors.emeraldAccent, width: 2),
+                          borderSide: const BorderSide(color: Colors.white, width: 2),
                         ),
                       ),
                       validator: (val) {
@@ -115,7 +115,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   ElevatedButton(
                     onPressed: _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.emeraldAccent[400],
+                      backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF0F172A),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -130,7 +130,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                 ] else if (isChecking) ...[
                   // Loading / Gathering signals state
                   const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation(Colors.emeraldAccent),
+                    valueColor: AlwaysStoppedAnimation(Colors.white),
                   ),
                   const SizedBox(height: 32),
                   const Text(
@@ -151,13 +151,13 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   Icon(
                     result.isAccepted ? Icons.check_circle_rounded : Icons.error_outline_rounded,
                     size: 100,
-                    color: result.isAccepted ? Colors.emeraldAccent[400] : Colors.redAccent,
+                    color: result.isAccepted ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     result.isAccepted ? 'Check-In Successful!' : 'Check-In Failed',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -179,7 +179,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
                         _codeController.clear();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF0F172A),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -189,8 +190,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
                     OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.emeraldAccent[400],
-                        side: BorderSide(color: Colors.emeraldAccent[400]!),
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -210,7 +211,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         children: [
-          Icon(Icons.check, size: 14, color: active ? Colors.emeraldAccent[400] : Colors.blueGrey),
+          Icon(Icons.check, size: 14, color: active ? Colors.white : Colors.blueGrey),
           const SizedBox(width: 8),
           Text(
             title,

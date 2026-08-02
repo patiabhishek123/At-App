@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Icon(
                 Icons.school_outlined,
                 size: 80,
-                color: Colors.emeraldAccent[400],
+                color: Colors.white,
               ),
               const SizedBox(height: 16),
               const Text(
@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.emeraldAccent[400]!),
+                            borderSide: const BorderSide(color: Colors.white),
                           ),
                         ),
                         validator: (val) {
@@ -150,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.emeraldAccent[400]!),
+                            borderSide: const BorderSide(color: Colors.white),
                           ),
                         ),
                         validator: (val) {
@@ -164,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ElevatedButton(
                         onPressed: isLoading ? null : _submit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.emeraldAccent[400],
+                          backgroundColor: Colors.white,
                           foregroundColor: const Color(0xFF0F172A),
                           disabledBackgroundColor: Colors.blueGrey[800],
                           padding: const EdgeInsets.symmetric(vertical: 16),

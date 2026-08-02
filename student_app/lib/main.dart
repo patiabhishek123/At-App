@@ -30,12 +30,12 @@ class AtAppStudent extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0F172A),
-        primaryColor: Colors.emeraldAccent[400],
-        colorScheme: ColorScheme.dark(
-          primary: Colors.emeraldAccent[400]!,
-          secondary: Colors.emeraldAccent[200]!,
-          background: const Color(0xFF0F172A),
-          surface: const Color(0xFF1E293B),
+        primaryColor: Colors.white,
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.white,
+          secondary: Colors.blueGrey,
+          background: Color(0xFF0F172A),
+          surface: Color(0xFF1E293B),
         ),
         textTheme: const TextTheme(
           bodyLarge: TextStyle(color: Colors.white70),
@@ -58,7 +58,7 @@ class AuthWrapper extends StatelessWidget {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation(Colors.emeraldAccent),
+            valueColor: AlwaysStoppedAnimation(Colors.white),
           ),
         ),
       );
