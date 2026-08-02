@@ -10,14 +10,14 @@ Organized by phase. Each phase assumes the previous one is functionally complete
 - [x] Implement `college_id`-based Postgres RLS policies and verify with a cross-tenant test
 
 ## Phase 1 — Core backend services
-- [ ] Auth Service: signup/login, JWT issuance + refresh, role-based access control
-- [ ] Admin Service: college/department/course/section CRUD, enrollment management, CSV bulk import
-- [ ] Session Service: start/end session, rotating code generation (Redis-backed TTL), BSSID/geofence registration
-- [ ] Verification Service: evaluate code/BSSID/geofence match on submission
-- [ ] Attendance Service: record outcomes, handle manual overrides, emit Kafka events
-- [ ] Kafka topics set up: `session.started`, `checkin.submitted`, `checkin.verified`, `attendance.recorded`, `threshold.breached`
-- [ ] Notification Service: consume events, send push notifications (integrate with FCM/APNs)
-- [ ] Reporting Service: consume `attendance.recorded`, maintain `attendance_aggregates`
+- [x] Auth Service: signup/login, JWT issuance + refresh, role-based access control
+- [x] Admin Service: college/department/course/section CRUD, enrollment management, CSV bulk import
+- [x] Session Service: start/end session, rotating code generation (Redis-backed TTL), BSSID/geofence registration
+- [x] Verification Service: evaluate code/BSSID/geofence match on submission
+- [x] Attendance Service: record outcomes, handle manual overrides, emit Kafka events
+- [x] Kafka topics set up: `session.started`, `checkin.submitted`, `checkin.verified`, `attendance.recorded`, `threshold.breached`
+- [x] Notification Service: consume events, send push notifications (integrate with FCM/APNs)
+- [x] Reporting Service: consume `attendance.recorded`, maintain `attendance_aggregates`
 
 ## Phase 2 — Teacher mobile app (Flutter)
 - [ ] Auth screens (login, session persistence)

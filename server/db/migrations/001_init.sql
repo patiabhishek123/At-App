@@ -269,3 +269,22 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO app_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO app_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO app_user;
 
+-- Function to retrieve user credentials and college_id across tenants for login authentication
+CREATE OR REPLACE FUNCTION get_user_for_auth(p_email TEXT)
+RETURNS TABLE (
+    id UUID,
+    college_id UUID,
+    role TEXT,
+    name TEXT,
+    password_hash TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT u.id, u.college_id, u.role, u.name, u.password_hash
+    FROM users u
+    WHERE u.email = p_email;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION get_user_for_auth(TEXT) TO app_user;
+
