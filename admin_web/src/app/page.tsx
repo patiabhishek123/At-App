@@ -459,30 +459,30 @@ export default function AdminDashboard() {
             </div>
 
             <div className="stats-grid">
-              <div className="card">
+              <div className="card card-attendance">
                 <div className="card-header-icon">
                   <span>AVERAGE ATTENDANCE</span>
                   <span>📊</span>
                 </div>
-                <div className="card-value" style={{ color: '#f8fafc' }}>
+                <div className="card-value">
                   {(sections.reduce((acc, s) => acc + s.attendance, 0) / sections.length).toFixed(1)}%
                 </div>
                 <div className="card-footer-desc">School-wide Aggregate</div>
               </div>
-              <div className="card">
+              <div className="card card-sections">
                 <div className="card-header-icon">
                   <span>ACTIVE SECTIONS</span>
                   <span>📚</span>
                 </div>
-                <div className="card-value" style={{ color: '#f8fafc' }}>{sections.length}</div>
+                <div className="card-value">{sections.length}</div>
                 <div className="card-footer-desc">Fall 2026 Semester</div>
               </div>
-              <div className="card">
+              <div className="card card-alerts">
                 <div className="card-header-icon">
                   <span>ATTENDANCE ALERTS</span>
                   <span>⚠️</span>
                 </div>
-                <div className="card-value" style={{ color: 'var(--color-danger)' }}>
+                <div className="card-value">
                   {sections.filter(s => s.attendance < s.threshold).length}
                 </div>
                 <div className="card-footer-desc">Sections below threshold</div>
