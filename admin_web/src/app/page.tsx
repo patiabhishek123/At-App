@@ -256,7 +256,7 @@ export default function LandingPage() {
           <div className="reveal-init reveal-active" ref={(el) => { if (el) revealRefs.current[0] = el; }}>
             <span className="eyebrow-badge">For colleges tired of paper sheets</span>
             <h1 className="hero-title">
-              Attendance that <span style={{ textDecoration: 'underline', decorationColor: 'var(--accent-gold)' }}>can't</span> be faked.
+              Attendance that <span style={{ textDecoration: 'underline', textDecorationColor: 'var(--accent-gold)' }}>can't</span> be faked.
             </h1>
             <p className="hero-description">
               AtApp verifies who's actually in the room using combined network BSSID matching, micro-GPS geofences, and rotating teacher codes. It shows every student exactly where they stand in real time.
