@@ -147,10 +147,21 @@ cd student_app && flutter pub get && flutter run
 ### 4. Run the tests
 
 ```bash
-cd server && go test -v ./...                     # unit + RLS cross-tenant tests
-cd teacher_app && flutter test
-cd student_app && flutter test
+# Full project verification (backend services must be running)
+./scripts/verify.sh
+
+# Or verify one component
+./scripts/verify.sh server
+./scripts/verify.sh student
+./scripts/verify.sh teacher
+./scripts/verify.sh admin
 ```
+
+The full verifier runs Go tests/build, Flutter analysis/tests for both mobile apps,
+and Next.js lint/build. Start PostgreSQL, Redis, and Redpanda with
+`docker compose up -d` before running uncached backend integration tests.
+Backend packages are temporarily tested serially because their integration fixtures
+reset a shared development schema.
 
 ### API
 

@@ -19,7 +19,7 @@ all pass.
 
 | Area | Current state | Verification baseline |
 |---|---|---|
-| Go backend | Core services and integration tests exist | Packages passed, but the local command ended on a read-only Go cache cleanup error |
+| Go backend | Core services and integration tests exist | `./scripts/verify.sh server` passes with serialized integration packages |
 | Student Flutter app | Login, courses, manual code check-in, GPS/BSSID submission implemented | `flutter analyze` and 2 login widget tests pass |
 | Teacher Flutter app | Sections, sessions, rotating code, roster, overrides, dashboard and history implemented | `flutter analyze` and 2 login widget tests pass |
 | Admin website | Polished interactive prototype | Uses hard-coded/local React state and is not connected to the Go API |
@@ -51,17 +51,19 @@ recorded in this document.
 Tasks: `TEST-01`, current admin lint failures from `TEST-03`, and a repeatable local
 test command for each component.
 
+Status: **Complete — 2026-08-12**
+
 Deliverables:
 
-- Replace both stale Flutter counter tests.
-- Make Flutter analysis/tests runnable and establish the actual baseline.
-- Fix existing Next.js lint errors.
-- Run the existing Go suite with a writable task-local build cache.
-- Add a small root verification script or documented command sequence.
+- [x] Replace both stale Flutter counter tests.
+- [x] Make Flutter analysis/tests runnable and establish the actual baseline.
+- [x] Fix existing Next.js lint errors.
+- [x] Run the existing Go suite with a writable dedicated build cache.
+- [x] Add a small root verification script or documented command sequence.
 
 Gate:
 
-- Existing behavior has passing baseline checks before security behavior changes.
+- [x] Existing behavior has passing baseline checks before security behavior changes.
 
 Planned commits:
 
