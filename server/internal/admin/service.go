@@ -22,6 +22,40 @@ func NewService(dbConn *sql.DB) *Service {
 	return &Service{dbConn: dbConn}
 }
 
+// CreateUser creates a user in the authenticated administrator's college.
+func (s *Service) CreateUser(ctx context.Context, collegeID, role, name, email, password string) (string, error) {
+	if role != "student" && role != "teacher" && role != "admin" {
+		return "", errors.New("invalid role: must be student, teacher, or admin")
+	}
+
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	tx, err := s.dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	if err := db.WithTenant(tx, collegeID); err != nil {
+		return "", err
+	}
+
+	var id string
+	err = tx.QueryRowContext(ctx, `
+		INSERT INTO users (college_id, role, name, email, password_hash)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`, collegeID, role, name, email, string(hashedBytes)).Scan(&id)
+	if err != nil {
+		return "", fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return id, tx.Commit()
+}
+
 // CreateDepartment creates a department inside the given college tenant context.
 func (s *Service) CreateDepartment(ctx context.Context, collegeID, name string) (string, error) {
 	tx, err := s.dbConn.BeginTx(ctx, nil)

@@ -24,12 +24,53 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.Use(gateway.RequireRole("admin"))
 
+		r.Post("/admin/users", h.handleCreateUser)
 		r.Post("/admin/departments", h.handleCreateDepartment)
 		r.Post("/admin/courses", h.handleCreateCourse)
 		r.Post("/admin/sections", h.handleCreateSection)
 		r.Post("/admin/import/users", h.handleImportUsers)
 		r.Post("/admin/import/enrollments", h.handleImportEnrollments)
 	})
+}
+
+type createUserRequest struct {
+	Role     string `json:"role"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
+	collegeID := gateway.GetCollegeID(r.Context())
+	if collegeID == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "missing college tenant context")
+		return
+	}
+
+	var req createUserRequest
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.Role == "" || req.Name == "" || req.Email == "" || req.Password == "" {
+		utils.WriteError(w, http.StatusBadRequest, "role, name, email, and password are required")
+		return
+	}
+	if req.Role != "student" && req.Role != "teacher" && req.Role != "admin" {
+		utils.WriteError(w, http.StatusBadRequest, "role must be student, teacher, or admin")
+		return
+	}
+
+	id, err := h.service.CreateUser(r.Context(), collegeID, req.Role, req.Name, req.Email, req.Password)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, map[string]string{"id": id})
 }
 
 type createDeptRequest struct {

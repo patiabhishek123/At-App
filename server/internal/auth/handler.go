@@ -19,11 +19,10 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// RegisterRoutes binds authentication paths to the router.
-func (h *Handler) RegisterRoutes(r chi.Router) {
+// RegisterPublicRoutes binds the authentication paths that do not require a JWT.
+func (h *Handler) RegisterPublicRoutes(r chi.Router) {
 	r.Post("/auth/login", h.handleLogin)
 	r.Post("/auth/refresh", h.handleRefresh)
-	r.Post("/auth/signup", h.handleSignUp)
 }
 
 type loginRequest struct {
@@ -89,33 +88,4 @@ func (h *Handler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, tokens)
-}
-
-type signUpRequest struct {
-	CollegeID string `json:"collegeId"`
-	Role      string `json:"role"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-}
-
-func (h *Handler) handleSignUp(w http.ResponseWriter, r *http.Request) {
-	var req signUpRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-
-	if req.CollegeID == "" || req.Role == "" || req.Name == "" || req.Email == "" || req.Password == "" {
-		utils.WriteError(w, http.StatusBadRequest, "collegeId, role, name, email, and password are required")
-		return
-	}
-
-	user, err := h.service.SignUp(r.Context(), req.CollegeID, req.Role, req.Name, req.Email, req.Password)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	utils.WriteJSON(w, http.StatusCreated, user)
 }

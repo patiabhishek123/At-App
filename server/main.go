@@ -123,7 +123,6 @@ func main() {
 		}
 	}()
 
-
 	// 8. Router and middlewares
 	r := chi.NewRouter()
 
@@ -148,7 +147,7 @@ func main() {
 	// 9. Register endpoints under /api/v1
 	r.Route("/api/v1", func(r chi.Router) {
 		// Public Auth routes
-		authHandler.RegisterRoutes(r)
+		authHandler.RegisterPublicRoutes(r)
 
 		// Authenticated Tenant Context routes
 		r.Group(func(r chi.Router) {

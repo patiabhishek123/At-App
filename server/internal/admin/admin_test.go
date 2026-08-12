@@ -1,12 +1,18 @@
 package admin
 
 import (
+	"bytes"
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 
 	"atapp/db"
+	"atapp/internal/auth"
+	"atapp/internal/gateway"
+	"github.com/go-chi/chi/v5"
 )
 
 func TestAdminCRUDAndImport(t *testing.T) {
@@ -63,6 +69,7 @@ func TestAdminCRUDAndImport(t *testing.T) {
 
 	service := NewService(dbConn)
 	ctx := context.Background()
+	testAdminAccountCreationRoutes(t, service, collegeID)
 
 	// 1. Create Department
 	deptID, err := service.CreateDepartment(ctx, collegeID, "Electrical Engineering")
@@ -135,5 +142,75 @@ john@mit.edu,` + sectionID
 	}
 	if enrollmentsImported != 2 {
 		t.Errorf("Expected 2 enrollments imported, got %d", enrollmentsImported)
+	}
+}
+
+func testAdminAccountCreationRoutes(t *testing.T, service *Service, collegeID string) {
+	t.Helper()
+
+	// The public auth router deliberately has no signup endpoint.
+	publicRouter := chi.NewRouter()
+	auth.NewHandler(nil).RegisterPublicRoutes(publicRouter)
+	publicRequest := httptest.NewRequest(http.MethodPost, "/auth/signup", bytes.NewBufferString(`{
+		"collegeId":"attacker-selected", "role":"admin", "name":"Attacker",
+		"email":"attacker@example.com", "password":"password"
+	}`))
+	publicResponse := httptest.NewRecorder()
+	publicRouter.ServeHTTP(publicResponse, publicRequest)
+	if publicResponse.Code != http.StatusNotFound {
+		t.Fatalf("expected public signup to be unavailable, got status %d", publicResponse.Code)
+	}
+
+	jwtSecret := []byte("admin-route-test-secret-at-least-32-bytes")
+	protectedRouter := chi.NewRouter()
+	protectedRouter.Use(gateway.AuthMiddleware(jwtSecret))
+	NewHandler(service).RegisterRoutes(protectedRouter)
+
+	requestBody := `{
+		"role":"student", "name":"Protected Student",
+		"email":"protected@mit.edu", "password":"password123"
+	}`
+
+	unauthenticatedRequest := httptest.NewRequest(http.MethodPost, "/admin/users", bytes.NewBufferString(requestBody))
+	unauthenticatedResponse := httptest.NewRecorder()
+	protectedRouter.ServeHTTP(unauthenticatedResponse, unauthenticatedRequest)
+	if unauthenticatedResponse.Code != http.StatusUnauthorized {
+		t.Fatalf("expected unauthenticated account creation to return 401, got %d", unauthenticatedResponse.Code)
+	}
+
+	studentTokens, err := auth.GenerateTokenPair("student-user", "student", collegeID, jwtSecret)
+	if err != nil {
+		t.Fatalf("failed to create student token: %v", err)
+	}
+	studentRequest := httptest.NewRequest(http.MethodPost, "/admin/users", bytes.NewBufferString(requestBody))
+	studentRequest.Header.Set("Authorization", "Bearer "+studentTokens.AccessToken)
+	studentResponse := httptest.NewRecorder()
+	protectedRouter.ServeHTTP(studentResponse, studentRequest)
+	if studentResponse.Code != http.StatusForbidden {
+		t.Fatalf("expected student account creation to return 403, got %d", studentResponse.Code)
+	}
+
+	adminTokens, err := auth.GenerateTokenPair("admin-user", "admin", collegeID, jwtSecret)
+	if err != nil {
+		t.Fatalf("failed to create admin token: %v", err)
+	}
+	crossTenantRequest := httptest.NewRequest(http.MethodPost, "/admin/users", bytes.NewBufferString(`{
+		"collegeId":"attacker-selected", "role":"admin", "name":"Other Tenant Admin",
+		"email":"other-admin@example.com", "password":"password123"
+	}`))
+	crossTenantRequest.Header.Set("Authorization", "Bearer "+adminTokens.AccessToken)
+	crossTenantResponse := httptest.NewRecorder()
+	protectedRouter.ServeHTTP(crossTenantResponse, crossTenantRequest)
+	if crossTenantResponse.Code != http.StatusBadRequest {
+		t.Fatalf("expected caller-supplied collegeId to return 400, got %d", crossTenantResponse.Code)
+	}
+
+	adminRequest := httptest.NewRequest(http.MethodPost, "/admin/users", bytes.NewBufferString(requestBody))
+	adminRequest.Header.Set("Authorization", "Bearer "+adminTokens.AccessToken)
+	adminResponse := httptest.NewRecorder()
+	protectedRouter.ServeHTTP(adminResponse, adminRequest)
+	if adminResponse.Code != http.StatusCreated {
+		t.Fatalf("expected authenticated admin account creation to return 201, got %d: %s",
+			adminResponse.Code, adminResponse.Body.String())
 	}
 }

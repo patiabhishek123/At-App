@@ -290,9 +290,9 @@ Recommended pull-request grouping:
 
 ### SEC-01: Restrict account creation
 
-- [ ] Remove public self-selection of `collegeId` and privileged roles from `/auth/signup`.
+- [x] Remove public self-selection of `collegeId` and privileged roles from `/auth/signup`.
 - [ ] Make tenant onboarding and admin creation a protected bootstrap/admin workflow.
-- [ ] Permit normal user creation only through an authenticated college admin or controlled invitation/import.
+- [x] Permit normal user creation only through an authenticated college admin or controlled invitation/import.
 
 Verification:
 
