@@ -28,6 +28,15 @@ interface AuditLog {
   timestamp: string;
 }
 
+interface CsvPreviewRow {
+  id: string;
+  name: string;
+  email: string;
+  section: string;
+}
+
+type AuditLogFilter = 'all' | AuditLog['type'];
+
 // Premium Monochrome Icons
 const DashboardIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -200,7 +209,7 @@ export default function AdminDashboard() {
 
   // Audit Log Filters
   const [auditSearch, setAuditSearch] = useState('');
-  const [auditType, setAuditType] = useState<'all' | 'override' | 'failure'>('all');
+  const [auditType, setAuditType] = useState<AuditLogFilter>('all');
 
   // Section Modal State (Create/Edit)
   const [showAddModal, setShowAddModal] = useState(false);
@@ -229,7 +238,7 @@ export default function AdminDashboard() {
 
   // CSV Import State
   const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [csvPreview, setCsvPreview] = useState<any[]>([]);
+  const [csvPreview, setCsvPreview] = useState<CsvPreviewRow[]>([]);
   const [importFeedback, setImportFeedback] = useState('');
   const [importError, setImportError] = useState('');
 
@@ -353,7 +362,7 @@ export default function AdminDashboard() {
         const emailIdx = headers.indexOf('email');
         const secIdx = headers.indexOf('section');
 
-        const parsed = [];
+        const parsed: CsvPreviewRow[] = [];
         for (let i = 1; i < lines.length; i++) {
           const parts = lines[i].split(',').map(p => p.trim());
           if (parts.length < required.length) continue;
@@ -1117,7 +1126,7 @@ export default function AdminDashboard() {
                 <select
                   className="form-control"
                   value={auditType}
-                  onChange={(e) => setAuditType(e.target.value as any)}
+                  onChange={(e) => setAuditType(e.target.value as AuditLogFilter)}
                 >
                   <option value="all">All Log Types</option>
                   <option value="override">Overrides Only</option>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // SVGs for Premium Monochrome Icons
 const CheckIcon = () => (
@@ -13,29 +14,6 @@ const CheckIcon = () => (
 const ShieldIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-);
-
-const UserIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
-const WifiIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-    <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-    <line x1="12" y1="20" x2="12.01" y2="20" strokeWidth="3" />
-  </svg>
-);
-
-const MapPinIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-    <circle cx="12" cy="10" r="3" />
   </svg>
 );
 
@@ -87,7 +65,6 @@ export default function LandingPage() {
   ]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simPresentCount, setSimPresentCount] = useState(14);
-  const [simProgress, setSimProgress] = useState(0); // For student check-in meter
 
   // FAQ states
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -165,7 +142,6 @@ export default function LandingPage() {
   const startCheckInSimulation = () => {
     if (isSimulating) return;
     setIsSimulating(true);
-    setSimProgress(0);
 
     const steps = [
       { text: '[Client] Scanning local network & GPS parameters...', delay: 400 },
@@ -178,8 +154,6 @@ export default function LandingPage() {
     steps.forEach((step, idx) => {
       setTimeout(() => {
         setSimTerminalLines((lines) => [...lines.slice(-10), step.text]);
-        setSimProgress(((idx + 1) / steps.length) * 100);
-
         if (idx === steps.length - 1) {
           setIsSimulating(false);
           setSimPresentCount((c) => c + 1);
@@ -256,10 +230,10 @@ export default function LandingPage() {
           <div className="reveal-init reveal-active" ref={(el) => { if (el) revealRefs.current[0] = el; }}>
             <span className="eyebrow-badge">For colleges tired of paper sheets</span>
             <h1 className="hero-title">
-              Attendance that <span style={{ textDecoration: 'underline', textDecorationColor: 'var(--accent-gold)' }}>can't</span> be faked.
+              Attendance that <span style={{ textDecoration: 'underline', textDecorationColor: 'var(--accent-gold)' }}>can&apos;t</span> be faked.
             </h1>
             <p className="hero-description">
-              AtApp verifies who's actually in the room using combined network BSSID matching, micro-GPS geofences, and rotating teacher codes. It shows every student exactly where they stand in real time.
+              AtApp verifies who&apos;s actually in the room using combined network BSSID matching, micro-GPS geofences, and rotating teacher codes. It shows every student exactly where they stand in real time.
             </p>
 
             <div className="hero-cta-row">
@@ -286,7 +260,13 @@ export default function LandingPage() {
               transform: `translateY(${scrollY * 0.05}px) rotate(-1deg)`,
             }}>
               <div className="mockup-image-container">
-                <img src="/classroom_discussion.png" alt="Classroom Discussion" />
+                <Image
+                  src="/classroom_discussion.png"
+                  alt="Classroom discussion during an AtApp attendance session"
+                  fill
+                  sizes="(max-width: 900px) 100vw, 50vw"
+                  priority
+                />
                 <div style={{
                   position: 'absolute',
                   top: '16px',
@@ -337,7 +317,7 @@ export default function LandingPage() {
               transform: `translate(${mousePos.x * 0.3}px, ${-20 + scrollY * 0.03}px) rotate(-2deg)`,
             }}>
               <p style={{ fontSize: '12px', fontStyle: 'italic', margin: 0, lineHeight: 1.4, color: 'var(--text-light)' }}>
-                "Starting attendance takes me less than 10 seconds. Students check in from their seats before I finish writing the first equation."
+                &ldquo;Starting attendance takes me less than 10 seconds. Students check in from their seats before I finish writing the first equation.&rdquo;
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
                 <div style={{
@@ -825,7 +805,7 @@ export default function LandingPage() {
         {/* Short honest line */}
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
           <p style={{ fontStyle: 'italic', fontSize: '18px', fontWeight: '700', color: 'var(--bg-dark)' }}>
-            "AtApp is currently piloting with select colleges. Want to be one of the first?"
+            &ldquo;AtApp is currently piloting with select colleges. Want to be one of the first?&rdquo;
           </p>
         </div>
 

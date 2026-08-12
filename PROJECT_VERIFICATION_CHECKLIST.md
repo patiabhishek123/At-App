@@ -23,7 +23,7 @@ all pass.
 | Student Flutter app | Login, courses, manual code check-in, GPS/BSSID submission implemented | `flutter analyze` and 2 login widget tests pass |
 | Teacher Flutter app | Sections, sessions, rotating code, roster, overrides, dashboard and history implemented | `flutter analyze` and 2 login widget tests pass |
 | Admin website | Polished interactive prototype | Uses hard-coded/local React state and is not connected to the Go API |
-| Admin lint | Not clean | 8 errors and 7 warnings on 2026-08-12 |
+| Admin lint/build | Clean | `npm run lint` and `npm run build` pass |
 | Notifications | Kafka consumers exist | Delivery uses console logging; no FCM/APNs delivery or notification persistence |
 | Documentation | Product intent is well documented | README, tasks, OpenAPI, and implementation disagree in several places |
 
@@ -572,8 +572,8 @@ Expected result: command exits successfully with no races.
 
 ### TEST-03: Make the admin web quality gate pass — P1
 
-- [ ] Fix all current ESLint errors, including explicit `any` and unescaped JSX text.
-- [ ] Resolve or deliberately configure remaining warnings.
+- [x] Fix all current ESLint errors, including explicit `any` and unescaped JSX text.
+- [x] Resolve or deliberately configure remaining warnings.
 - [ ] Add component tests for login, CRUD, filters, CSV validation, settings, and API failures.
 - [ ] Add at least one browser-level admin workflow test.
 
