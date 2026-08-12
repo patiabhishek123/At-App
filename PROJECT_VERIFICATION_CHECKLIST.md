@@ -315,9 +315,9 @@ Verification:
 
 ### SEC-03: Enforce teacher ownership for every session operation
 
-- [ ] Require that the authenticated teacher owns the section before retrieving a code.
-- [ ] Require ownership before ending a session.
-- [ ] Retain ownership checks for roster, dashboard, history, and overrides.
+- [x] Require that the authenticated teacher owns the section before retrieving a code.
+- [x] Require ownership before ending a session.
+- [x] Retain ownership checks for roster, dashboard, history, and overrides.
 
 Verification:
 

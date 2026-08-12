@@ -90,10 +90,14 @@ func TestSessionAndVerificationFlow(t *testing.T) {
 	attendanceSvc := attendance.NewService(dbConn, noOpBus)
 	updaterSvc := reporting.NewUpdater(dbConn, noOpBus)
 
-	// 5. SignUp Teacher and 2 Students
+	// 5. SignUp Teachers and 2 Students
 	teacherUser, err := authSvc.SignUp(ctx, collegeID, "teacher", "Dr. Bob", "bob@mit.edu", "teacher123")
 	if err != nil {
 		t.Fatalf("Failed to sign up teacher: %v", err)
+	}
+	otherTeacher, err := authSvc.SignUp(ctx, collegeID, "teacher", "Dr. Eve", "eve@mit.edu", "teacher123")
+	if err != nil {
+		t.Fatalf("Failed to sign up second teacher: %v", err)
 	}
 
 	student1User, err := authSvc.SignUp(ctx, collegeID, "student", "Alice", "alice@mit.edu", "student123")
@@ -178,11 +182,16 @@ func TestSessionAndVerificationFlow(t *testing.T) {
 		t.Errorf("Expected geofence rejection reason, got %q", *res3.RejectionReason)
 	}
 
-	// 12. Test Code Rotation
+	// 12. Another teacher in the same college cannot retrieve the cached code.
+	if _, _, err := sessionSvc.GetOrRotateCode(ctx, collegeID, otherTeacher.ID, res.SessionID); err == nil {
+		t.Fatal("Expected another teacher to be denied access to the session code")
+	}
+
+	// 13. Test Code Rotation
 	codeKey := "session:" + res.SessionID + ":code"
 	_ = rdb.Del(ctx, codeKey).Err()
 
-	rotatedCode, _, err := sessionSvc.GetOrRotateCode(ctx, collegeID, res.SessionID)
+	rotatedCode, _, err := sessionSvc.GetOrRotateCode(ctx, collegeID, teacherUser.ID, res.SessionID)
 	if err != nil {
 		t.Fatalf("Failed to rotate code: %v", err)
 	}
@@ -190,8 +199,13 @@ func TestSessionAndVerificationFlow(t *testing.T) {
 		t.Errorf("Expected rotated code to be different, got %s", rotatedCode)
 	}
 
-	// 13. End Session (Bob ends it)
-	summary, err := sessionSvc.EndSession(ctx, collegeID, res.SessionID)
+	// 14. Another teacher cannot end Bob's session.
+	if _, err := sessionSvc.EndSession(ctx, collegeID, otherTeacher.ID, res.SessionID); err == nil {
+		t.Fatal("Expected another teacher to be denied when ending the session")
+	}
+
+	// 15. End Session (Bob ends it)
+	summary, err := sessionSvc.EndSession(ctx, collegeID, teacherUser.ID, res.SessionID)
 	if err != nil {
 		t.Fatalf("Failed to end session: %v", err)
 	}
@@ -200,7 +214,7 @@ func TestSessionAndVerificationFlow(t *testing.T) {
 		t.Errorf("Expected 1 present and 1 absent, got: %+v", summary)
 	}
 
-	// 14. Recalculate aggregates for Alice and Charlie
+	// 16. Recalculate aggregates for Alice and Charlie
 	err = updaterSvc.UpdateAggregate(ctx, collegeID, student1User.ID, sectionID)
 	if err != nil {
 		t.Fatalf("Failed to update aggregate for Alice: %v", err)
@@ -210,7 +224,7 @@ func TestSessionAndVerificationFlow(t *testing.T) {
 		t.Fatalf("Failed to update aggregate for Charlie: %v", err)
 	}
 
-	// 15. Verify Student Alice and Charlie courses report
+	// 17. Verify Student Alice and Charlie courses report
 	coursesAlice, err := attendanceSvc.GetStudentCourses(ctx, collegeID, student1User.ID)
 	if err != nil {
 		t.Fatalf("Failed to get student courses for Alice: %v", err)
@@ -227,7 +241,7 @@ func TestSessionAndVerificationFlow(t *testing.T) {
 		t.Errorf("Unexpected course statistics for Charlie: %+v", coursesCharlie)
 	}
 
-	// 16. Teacher bob overrides Charlie's attendance to overridden_present
+	// 18. Teacher bob overrides Charlie's attendance to overridden_present
 	overrideRes, err := attendanceSvc.SubmitOverride(
 		ctx, collegeID, teacherUser.ID, res.SessionID, student2User.ID,
 		"overridden_present", "Charlie was in class but forgot his phone",
@@ -239,7 +253,7 @@ func TestSessionAndVerificationFlow(t *testing.T) {
 		t.Errorf("Expected overridden_present, got %s", overrideRes.Status)
 	}
 
-	// 17. Re-calculate aggregate for Charlie and verify
+	// 19. Re-calculate aggregate for Charlie and verify
 	err = updaterSvc.UpdateAggregate(ctx, collegeID, student2User.ID, sectionID)
 	if err != nil {
 		t.Fatalf("Failed to update aggregate for Charlie post-override: %v", err)

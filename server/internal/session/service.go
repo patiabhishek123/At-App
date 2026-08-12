@@ -118,18 +118,10 @@ func (s *Service) StartSession(ctx context.Context, collegeID, teacherID, sectio
 }
 
 // GetOrRotateCode retrieves the current valid code or rotates it if expired.
-func (s *Service) GetOrRotateCode(ctx context.Context, collegeID, sessionID string) (string, int, error) {
+func (s *Service) GetOrRotateCode(ctx context.Context, collegeID, teacherID, sessionID string) (string, int, error) {
 	codeKey := fmt.Sprintf("session:%s:code", sessionID)
 	prevKey := fmt.Sprintf("session:%s:prev", sessionID)
 
-	// If the current code exists in Redis, return it and its remaining TTL
-	val, err := s.rdb.Get(ctx, codeKey).Result()
-	if err == nil {
-		ttl, _ := s.rdb.TTL(ctx, codeKey).Result()
-		return val, int(ttl.Seconds()), nil
-	}
-
-	// Redis TTL expired, rotate the code in a tenant transaction
 	tx, err := s.dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return "", 0, err
@@ -141,14 +133,27 @@ func (s *Service) GetOrRotateCode(ctx context.Context, collegeID, sessionID stri
 	}
 
 	var oldCode string
-	err = tx.QueryRowContext(ctx, "SELECT current_code FROM class_sessions WHERE id = $1 AND ended_at IS NULL", sessionID).Scan(&oldCode)
+	err = tx.QueryRowContext(ctx, `
+		SELECT cs.current_code
+		FROM class_sessions cs
+		JOIN sections sec ON sec.id = cs.section_id
+		WHERE cs.id = $1 AND sec.teacher_id = $2 AND cs.ended_at IS NULL
+	`, sessionID, teacherID).Scan(&oldCode)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", 0, errors.New("active class session not found")
+			return "", 0, errors.New("active class session not found or not assigned to you")
 		}
 		return "", 0, err
 	}
 
+	// Authorize against PostgreSQL before returning the cached code from Redis.
+	val, err := s.rdb.Get(ctx, codeKey).Result()
+	if err == nil {
+		ttl, _ := s.rdb.TTL(ctx, codeKey).Result()
+		return val, int(ttl.Seconds()), nil
+	}
+
+	// Redis TTL expired, rotate the code in the authorized tenant transaction.
 	newCode := generateCode()
 	for newCode == oldCode {
 		newCode = generateCode()
@@ -178,7 +183,7 @@ type SessionSummary struct {
 }
 
 // EndSession closes a session, records absences for non-attendees, and cleans up Redis.
-func (s *Service) EndSession(ctx context.Context, collegeID, sessionID string) (SessionSummary, error) {
+func (s *Service) EndSession(ctx context.Context, collegeID, teacherID, sessionID string) (SessionSummary, error) {
 	tx, err := s.dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return SessionSummary{}, err
@@ -191,10 +196,15 @@ func (s *Service) EndSession(ctx context.Context, collegeID, sessionID string) (
 
 	var sectionID string
 	var endedAt sql.NullTime
-	err = tx.QueryRowContext(ctx, "SELECT section_id, ended_at FROM class_sessions WHERE id = $1", sessionID).Scan(&sectionID, &endedAt)
+	err = tx.QueryRowContext(ctx, `
+		SELECT cs.section_id, cs.ended_at
+		FROM class_sessions cs
+		JOIN sections sec ON sec.id = cs.section_id
+		WHERE cs.id = $1 AND sec.teacher_id = $2
+	`, sessionID, teacherID).Scan(&sectionID, &endedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return SessionSummary{}, errors.New("class session not found")
+			return SessionSummary{}, errors.New("class session not found or not assigned to you")
 		}
 		return SessionSummary{}, err
 	}

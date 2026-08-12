@@ -88,8 +88,9 @@ func (h *Handler) handleStartSession(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleEndSession(w http.ResponseWriter, r *http.Request) {
 	collegeID := gateway.GetCollegeID(r.Context())
-	if collegeID == "" {
-		utils.WriteError(w, http.StatusUnauthorized, "unauthorized: missing college context")
+	teacherID := gateway.GetUserID(r.Context())
+	if collegeID == "" || teacherID == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized: missing teacher context")
 		return
 	}
 
@@ -99,7 +100,7 @@ func (h *Handler) handleEndSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	summary, err := h.service.EndSession(r.Context(), collegeID, sessionID)
+	summary, err := h.service.EndSession(r.Context(), collegeID, teacherID, sessionID)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -113,8 +114,9 @@ func (h *Handler) handleEndSession(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetCode(w http.ResponseWriter, r *http.Request) {
 	collegeID := gateway.GetCollegeID(r.Context())
-	if collegeID == "" {
-		utils.WriteError(w, http.StatusUnauthorized, "unauthorized: missing college context")
+	teacherID := gateway.GetUserID(r.Context())
+	if collegeID == "" || teacherID == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized: missing teacher context")
 		return
 	}
 
@@ -124,7 +126,7 @@ func (h *Handler) handleGetCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code, expires, err := h.service.GetOrRotateCode(r.Context(), collegeID, sessionID)
+	code, expires, err := h.service.GetOrRotateCode(r.Context(), collegeID, teacherID, sessionID)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
