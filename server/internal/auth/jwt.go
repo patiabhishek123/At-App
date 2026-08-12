@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,8 +13,14 @@ type Claims struct {
 	UserID    string `json:"user_id"`
 	Role      string `json:"role"`
 	CollegeID string `json:"college_id"`
+	TokenType string `json:"token_type"`
 	jwt.RegisteredClaims
 }
+
+const (
+	TokenTypeAccess  = "access"
+	TokenTypeRefresh = "refresh"
+)
 
 // TokenPair bundles the access and refresh tokens.
 type TokenPair struct {
@@ -30,9 +37,11 @@ func GenerateTokenPair(userID, role, collegeID string, secret []byte) (TokenPair
 		UserID:    userID,
 		Role:      role,
 		CollegeID: collegeID,
+		TokenType: TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(15 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(now),
+			Subject:   userID,
 		},
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
@@ -46,9 +55,11 @@ func GenerateTokenPair(userID, role, collegeID string, secret []byte) (TokenPair
 		UserID:    userID,
 		Role:      role,
 		CollegeID: collegeID,
+		TokenType: TokenTypeRefresh,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(7 * 24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(now),
+			Subject:   userID,
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
@@ -63,10 +74,19 @@ func GenerateTokenPair(userID, role, collegeID string, secret []byte) (TokenPair
 	}, nil
 }
 
-// ValidateToken parses and validates the JWT string against the secret.
-func ValidateToken(tokenStr string, secret []byte) (*Claims, error) {
+// ValidateAccessToken parses a JWT and requires an access-token purpose.
+func ValidateAccessToken(tokenStr string, secret []byte) (*Claims, error) {
+	return validateToken(tokenStr, secret, TokenTypeAccess)
+}
+
+// ValidateRefreshToken parses a JWT and requires a refresh-token purpose.
+func ValidateRefreshToken(tokenStr string, secret []byte) (*Claims, error) {
+	return validateToken(tokenStr, secret, TokenTypeRefresh)
+}
+
+func validateToken(tokenStr string, secret []byte, expectedType string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+		if t.Method != jwt.SigningMethodHS256 {
 			return nil, errors.New("unexpected signing method")
 		}
 		return secret, nil
@@ -75,9 +95,16 @@ func ValidateToken(tokenStr string, secret []byte) (*Claims, error) {
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		return claims, nil
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
+		return nil, errors.New("invalid claims or token")
+	}
+	if claims.TokenType != expectedType {
+		return nil, fmt.Errorf("invalid token purpose: expected %s", expectedType)
+	}
+	if claims.UserID == "" || claims.Role == "" || claims.CollegeID == "" {
+		return nil, errors.New("token is missing required identity claims")
 	}
 
-	return nil, errors.New("invalid claims or token")
+	return claims, nil
 }

@@ -302,9 +302,9 @@ Verification:
 
 ### SEC-02: Distinguish access and refresh tokens
 
-- [ ] Add a signed token-purpose claim such as `token_type: access|refresh`.
-- [ ] Accept only access tokens in gateway middleware.
-- [ ] Accept only refresh tokens at `/auth/refresh`.
+- [x] Add a signed token-purpose claim such as `token_type: access|refresh`.
+- [x] Accept only access tokens in gateway middleware.
+- [x] Accept only refresh tokens at `/auth/refresh`.
 - [ ] Add refresh-token rotation/revocation or document the accepted pilot policy.
 
 Verification:

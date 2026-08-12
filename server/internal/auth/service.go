@@ -124,7 +124,7 @@ func (s *Service) SignUp(ctx context.Context, collegeID, role, name, email, pass
 
 // Refresh generates a new token pair from a valid, unexpired refresh token.
 func (s *Service) Refresh(ctx context.Context, refreshTokenStr string) (TokenPair, error) {
-	claims, err := ValidateToken(refreshTokenStr, []byte(s.cfg.JWTSecret))
+	claims, err := ValidateRefreshToken(refreshTokenStr, []byte(s.cfg.JWTSecret))
 	if err != nil {
 		return TokenPair{}, fmt.Errorf("invalid refresh token: %w", err)
 	}

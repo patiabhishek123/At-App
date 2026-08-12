@@ -115,4 +115,9 @@ func TestAuthFlow(t *testing.T) {
 	if refreshed.AccessToken == "" || refreshed.RefreshToken == "" {
 		t.Error("Expected refreshed tokens to be populated")
 	}
+
+	// 7. Access tokens cannot be exchanged at the refresh endpoint.
+	if _, err := service.Refresh(ctx, tokens.AccessToken); err == nil {
+		t.Error("Expected access token to be rejected as a refresh token")
+	}
 }

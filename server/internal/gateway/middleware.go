@@ -37,7 +37,7 @@ func AuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
 			}
 
 			tokenStr := parts[1]
-			claims, err := auth.ValidateToken(tokenStr, jwtSecret)
+			claims, err := auth.ValidateAccessToken(tokenStr, jwtSecret)
 			if err != nil {
 				utils.WriteError(w, http.StatusUnauthorized, "invalid or expired access token")
 				return
