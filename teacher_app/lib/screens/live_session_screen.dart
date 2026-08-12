@@ -125,7 +125,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
-                value: selectedStatus,
+                initialValue: selectedStatus,
                 dropdownColor: AppTheme.surface,
                 style: const TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.w700),
                 decoration: const InputDecoration(
@@ -335,7 +335,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppTheme.success.withOpacity(0.12),
+                      color: AppTheme.success.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(

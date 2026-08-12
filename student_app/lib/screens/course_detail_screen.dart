@@ -118,7 +118,7 @@ class CourseDetailScreen extends StatelessWidget {
                     gridData: FlGridData(
                       show: true,
                       drawVerticalLine: false,
-                      getDrawingHorizontalLine: (value) => FlLine(
+                      getDrawingHorizontalLine: (value) => const FlLine(
                         color: AppTheme.border,
                         strokeWidth: 1,
                       ),
@@ -169,11 +169,11 @@ class CourseDetailScreen extends StatelessWidget {
                       // Target Threshold Reference Line
                       LineChartBarData(
                         spots: [
-                          FlSpot(0, targetPct),
+                          const FlSpot(0, targetPct),
                           FlSpot(spots.length.toDouble() - 1, targetPct),
                         ],
                         isCurved: false,
-                        color: AppTheme.danger.withOpacity(0.5),
+                        color: AppTheme.danger.withValues(alpha: 0.5),
                         barWidth: 1.5,
                         dashArray: [5, 5],
                         dotData: const FlDotData(show: false),
@@ -188,7 +188,7 @@ class CourseDetailScreen extends StatelessWidget {
                         dotData: const FlDotData(show: true),
                         belowBarData: BarAreaData(
                           show: true,
-                          color: (isWarning ? AppTheme.warning : AppTheme.primary).withOpacity(0.08),
+                          color: (isWarning ? AppTheme.warning : AppTheme.primary).withValues(alpha: 0.08),
                         ),
                       ),
                     ],

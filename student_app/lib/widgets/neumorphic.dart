@@ -44,7 +44,7 @@ class NeumorphicCard extends StatelessWidget {
         boxShadow: extraShadows ??
             [
               BoxShadow(
-                color: AppTheme.primary.withOpacity(0.02),
+                color: AppTheme.primary.withValues(alpha: 0.02),
                 offset: const Offset(0, 4),
                 blurRadius: 12,
               ),
@@ -87,8 +87,8 @@ class _NeumorphicButtonState extends State<NeumorphicButton> {
     
     // Choose appropriate background/border treatment
     final Color buttonColor = disabled 
-        ? defaultColor.withOpacity(0.35) 
-        : (_isPressed ? defaultColor.withOpacity(0.85) : defaultColor);
+        ? defaultColor.withValues(alpha: 0.35) 
+        : (_isPressed ? defaultColor.withValues(alpha: 0.85) : defaultColor);
 
     final bool isOutlineButton = defaultColor != AppTheme.primary && defaultColor != AppTheme.accent;
 
@@ -115,7 +115,7 @@ class _NeumorphicButtonState extends State<NeumorphicButton> {
                 ? []
                 : [
                     BoxShadow(
-                      color: AppTheme.primary.withOpacity(0.04),
+                      color: AppTheme.primary.withValues(alpha: 0.04),
                       offset: const Offset(0, 4),
                       blurRadius: 10,
                     ),

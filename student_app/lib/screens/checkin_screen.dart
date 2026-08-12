@@ -74,7 +74,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                         border: Border.all(color: AppTheme.primary, width: 1.5),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primary.withOpacity(0.04),
+                            color: AppTheme.primary.withValues(alpha: 0.04),
                             offset: const Offset(0, 4),
                             blurRadius: 12,
                           ),
@@ -137,7 +137,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                           ),
                           counterText: '',
                           filled: true,
-                          fillColor: AppTheme.bg.withOpacity(0.5),
+                          fillColor: AppTheme.bg.withValues(alpha: 0.5),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppTheme.border, width: 1.2),
@@ -311,7 +311,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: active ? const Color(0xFF4AD66D).withOpacity(0.15) : Colors.black12,
+              color: active ? const Color(0xFF4AD66D).withValues(alpha: 0.15) : Colors.black12,
               shape: BoxShape.circle,
             ),
             child: Icon(

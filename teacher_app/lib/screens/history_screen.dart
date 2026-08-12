@@ -137,7 +137,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: AppTheme.primary.withOpacity(0.12),
+                                            color: AppTheme.primary.withValues(alpha: 0.12),
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: const Text(
@@ -166,7 +166,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: badgeColor.withOpacity(0.12),
+                                          color: badgeColor.withValues(alpha: 0.12),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Text(

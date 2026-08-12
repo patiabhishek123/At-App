@@ -74,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     border: Border.all(color: AppTheme.border, width: 1.2),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primary.withOpacity(0.02),
+                        color: AppTheme.primary.withValues(alpha: 0.02),
                         offset: const Offset(0, 4),
                         blurRadius: 12,
                       ),
@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelStyle: const TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600, fontSize: 13),
                           prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.textMuted, size: 20),
                           filled: true,
-                          fillColor: AppTheme.bg.withOpacity(0.4),
+                          fillColor: AppTheme.bg.withValues(alpha: 0.4),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppTheme.border, width: 1.2),
@@ -165,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelStyle: const TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600, fontSize: 13),
                           prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.textMuted, size: 20),
                           filled: true,
-                          fillColor: AppTheme.bg.withOpacity(0.4),
+                          fillColor: AppTheme.bg.withValues(alpha: 0.4),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppTheme.border, width: 1.2),

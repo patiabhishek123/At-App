@@ -102,7 +102,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               child: Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: AppTheme.primary.withOpacity(0.08),
+                    backgroundColor: AppTheme.primary.withValues(alpha: 0.08),
                     radius: 24,
                     child: Text(
                       auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'T',
@@ -192,7 +192,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: AppTheme.primary.withOpacity(0.08),
+                                          color: AppTheme.primary.withValues(alpha: 0.08),
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                         child: Text(
@@ -253,9 +253,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                               ),
                                             );
                                           },
-                                          child: Row(
+                                          child: const Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
-                                            children: const [
+                                            children: [
                                               Icon(Icons.analytics_outlined, size: 16, color: AppTheme.primary),
                                               SizedBox(width: 6),
                                               Text(
@@ -288,9 +288,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                               ),
                                             );
                                           },
-                                          child: Row(
+                                          child: const Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
-                                            children: const [
+                                            children: [
                                               Icon(Icons.history_toggle_off, size: 16, color: AppTheme.primary),
                                               SizedBox(width: 6),
                                               Text(
@@ -314,9 +314,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                           borderRadius: 12,
                                           color: AppTheme.primary,
                                           onPressed: () => _startAttendance(sec.sectionId, sec.courseName, sec.courseCode),
-                                          child: Row(
+                                          child: const Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
-                                            children: const [
+                                            children: [
                                               Icon(Icons.play_arrow_rounded, size: 16, color: Colors.white),
                                               SizedBox(width: 4),
                                               Text(

@@ -98,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             children: [
                               CircleAvatar(
-                                backgroundColor: AppTheme.primary.withOpacity(0.08),
+                                backgroundColor: AppTheme.primary.withValues(alpha: 0.08),
                                 radius: 20,
                                 child: Text(
                                   auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'S',
@@ -195,16 +195,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withOpacity(0.08),
+                          color: AppTheme.primary.withValues(alpha: 0.08),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.bolt, color: AppTheme.primary, size: 24),
                       ),
                       const SizedBox(width: 16),
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'Attendance Session Live',
                               style: TextStyle(
@@ -340,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                             decoration: BoxDecoration(
-                                              color: percentColor.withOpacity(0.12),
+                                              color: percentColor.withValues(alpha: 0.12),
                                               borderRadius: BorderRadius.circular(8),
                                             ),
                                             child: Text(

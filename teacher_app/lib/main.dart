@@ -32,7 +32,6 @@ class AtAppTeacher extends StatelessWidget {
         colorScheme: const ColorScheme.light(
           primary: Color(0xFF6C63FF),
           secondary: Color(0xFF2D3748),
-          background: Color(0xFFF0F4F8),
           surface: Colors.white,
         ),
         textTheme: const TextTheme(
