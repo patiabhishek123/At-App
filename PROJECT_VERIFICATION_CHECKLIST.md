@@ -20,8 +20,8 @@ all pass.
 | Area | Current state | Verification baseline |
 |---|---|---|
 | Go backend | Core services and integration tests exist | Packages passed, but the local command ended on a read-only Go cache cleanup error |
-| Student Flutter app | Login, courses, manual code check-in, GPS/BSSID submission implemented | Widget test is stale and references nonexistent `MyApp` |
-| Teacher Flutter app | Sections, sessions, rotating code, roster, overrides, dashboard and history implemented | Widget test is stale and references nonexistent `MyApp` |
+| Student Flutter app | Login, courses, manual code check-in, GPS/BSSID submission implemented | `flutter analyze` and 2 login widget tests pass |
+| Teacher Flutter app | Sections, sessions, rotating code, roster, overrides, dashboard and history implemented | `flutter analyze` and 2 login widget tests pass |
 | Admin website | Polished interactive prototype | Uses hard-coded/local React state and is not connected to the Go API |
 | Admin lint | Not clean | 8 errors and 7 warnings on 2026-08-12 |
 | Notifications | Kafka consumers exist | Delivery uses console logging; no FCM/APNs delivery or notification persistence |
@@ -540,7 +540,7 @@ Verification:
 
 ### TEST-01: Replace stale Flutter tests — P0
 
-- [ ] Remove both default counter tests that reference nonexistent `MyApp`.
+- [x] Remove both default counter tests that reference nonexistent `MyApp`.
 - [ ] Add student authentication, home, check-in success/failure, and course-detail widget tests.
 - [ ] Add teacher authentication, section list, live session, roster, override, and session-end widget tests.
 - [ ] Mock secure storage, HTTP, location, and network plugins.

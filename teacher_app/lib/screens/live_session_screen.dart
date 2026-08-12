@@ -43,17 +43,21 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
             ),
             title: const Text(
               'Session Ended Summary',
-              style: TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.w900),
+              style: TextStyle(
+                  color: AppTheme.textDark, fontWeight: FontWeight.w900),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _summaryRow('Present Students', summary.presentCount, AppTheme.success),
+                _summaryRow(
+                    'Present Students', summary.presentCount, AppTheme.success),
                 const SizedBox(height: 12),
-                _summaryRow('Absent Students', summary.absentCount, AppTheme.danger),
+                _summaryRow(
+                    'Absent Students', summary.absentCount, AppTheme.danger),
                 const SizedBox(height: 12),
-                _summaryRow('Manual Overrides', summary.overrideCount, AppTheme.primary),
+                _summaryRow('Manual Overrides', summary.overrideCount,
+                    AppTheme.primary),
               ],
             ),
             actions: [
@@ -64,7 +68,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                 },
                 child: const Text(
                   'Back to Schedule',
-                  style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: AppTheme.primary, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -96,7 +101,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
         ),
         Text(
           value.toString(),
-          style: TextStyle(color: valueColor, fontWeight: FontWeight.w900, fontSize: 18),
+          style: TextStyle(
+              color: valueColor, fontWeight: FontWeight.w900, fontSize: 18),
         ),
       ],
     );
@@ -104,9 +110,11 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
 
   void _openOverrideDialog(RosterStudent student) {
     final reasonController = TextEditingController();
-    String selectedStatus = student.status.startsWith('overridden_') 
-        ? student.status 
-        : (student.status == 'present' ? 'overridden_absent' : 'overridden_present');
+    String selectedStatus = student.status.startsWith('overridden_')
+        ? student.status
+        : (student.status == 'present'
+            ? 'overridden_absent'
+            : 'overridden_present');
 
     showDialog(
       context: context,
@@ -119,7 +127,10 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
           ),
           title: Text(
             'Override for ${student.name}',
-            style: const TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.w900, fontSize: 18),
+            style: const TextStyle(
+                color: AppTheme.textDark,
+                fontWeight: FontWeight.w900,
+                fontSize: 18),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -127,10 +138,12 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
               DropdownButtonFormField<String>(
                 initialValue: selectedStatus,
                 dropdownColor: AppTheme.surface,
-                style: const TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                    color: AppTheme.textDark, fontWeight: FontWeight.w700),
                 decoration: const InputDecoration(
                   labelText: 'Override Status',
-                  labelStyle: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600),
+                  labelStyle: TextStyle(
+                      color: AppTheme.textMuted, fontWeight: FontWeight.w600),
                   enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: AppTheme.border),
                   ),
@@ -159,7 +172,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                 style: const TextStyle(color: AppTheme.textDark),
                 decoration: const InputDecoration(
                   labelText: 'Reason for Override (Required)',
-                  labelStyle: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600),
+                  labelStyle: TextStyle(
+                      color: AppTheme.textMuted, fontWeight: FontWeight.w600),
                   enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: AppTheme.border),
                   ),
@@ -173,7 +187,9 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.bold)),
+              child: const Text('Cancel',
+                  style: TextStyle(
+                      color: AppTheme.textMuted, fontWeight: FontWeight.bold)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -183,7 +199,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   );
                   return;
                 }
-                
+
                 final provider = context.read<SessionProvider>();
                 try {
                   await provider.submitOverride(
@@ -191,19 +207,24 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     selectedStatus,
                     reasonController.text.trim(),
                   );
-                  if (mounted) Navigator.of(ctx).pop();
+                  if (ctx.mounted) Navigator.of(ctx).pop();
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.danger),
+                  if (!ctx.mounted) return;
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                        content: Text(e.toString()),
+                        backgroundColor: AppTheme.danger),
                   );
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primary,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text('Save',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -215,10 +236,12 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   Widget build(BuildContext context) {
     final session = context.watch<SessionProvider>();
     final roster = session.roster;
-    final presentCount = roster.where((s) => s.status == 'present' || s.status == 'overridden_present').length;
+    final presentCount = roster
+        .where((s) => s.status == 'present' || s.status == 'overridden_present')
+        .length;
 
-    return WillPopScope(
-      onWillPop: () async => false, // Prevent accidental back navigation
+    return PopScope(
+      canPop: false, // Prevent accidental back navigation
       child: Scaffold(
         backgroundColor: AppTheme.bg,
         appBar: AppBar(
@@ -236,7 +259,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
           actions: [
             TextButton.icon(
               onPressed: _endSession,
-              icon: const Icon(Icons.stop_circle_outlined, color: AppTheme.danger, size: 20),
+              icon: const Icon(Icons.stop_circle_outlined,
+                  color: AppTheme.danger, size: 20),
               label: const Text(
                 'End Session',
                 style: TextStyle(
@@ -263,7 +287,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Giant Code Container using NeumorphicCard
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -293,12 +317,13 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    
+
                     // Countdown Progress
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.timer_outlined, size: 16, color: AppTheme.textDark),
+                        const Icon(Icons.timer_outlined,
+                            size: 16, color: AppTheme.textDark),
                         const SizedBox(width: 8),
                         Text(
                           'Rotating in ${session.codeExpiresIn}s',
@@ -314,9 +339,9 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Roster Counters Banner
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -333,7 +358,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: AppTheme.success.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
@@ -351,14 +377,16 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Live Student List
             Expanded(
               child: roster.isEmpty
                   ? const Center(
                       child: Text(
                         'Waiting for students to join...',
-                        style: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                            color: AppTheme.textMuted,
+                            fontWeight: FontWeight.w600),
                       ),
                     )
                   : ListView.builder(
@@ -366,9 +394,11 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       itemCount: roster.length,
                       itemBuilder: (context, index) {
                         final student = roster[index];
-                        final isPresent = student.status == 'present' || student.status == 'overridden_present';
-                        final isOverridden = student.status.startsWith('overridden_');
-                        
+                        final isPresent = student.status == 'present' ||
+                            student.status == 'overridden_present';
+                        final isOverridden =
+                            student.status.startsWith('overridden_');
+
                         Color statusColor = AppTheme.danger; // absent
                         if (isPresent) {
                           statusColor = AppTheme.success; // present
@@ -380,18 +410,24 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                           padding: const EdgeInsets.only(bottom: 12.0),
                           child: NeumorphicCard(
                             borderRadius: 16,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             child: Row(
                               children: [
                                 Icon(
-                                  isPresent ? Icons.check_circle_rounded : (student.status == 'pending' ? Icons.hourglass_empty_rounded : Icons.cancel_rounded),
+                                  isPresent
+                                      ? Icons.check_circle_rounded
+                                      : (student.status == 'pending'
+                                          ? Icons.hourglass_empty_rounded
+                                          : Icons.cancel_rounded),
                                   color: statusColor,
                                   size: 24,
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         student.name,
@@ -405,7 +441,9 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                                       Text(
                                         student.status.toUpperCase(),
                                         style: TextStyle(
-                                          color: isOverridden ? AppTheme.primary : AppTheme.textMuted,
+                                          color: isOverridden
+                                              ? AppTheme.primary
+                                              : AppTheme.textMuted,
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -414,7 +452,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.edit_note_rounded, color: AppTheme.primary, size: 24),
+                                  icon: const Icon(Icons.edit_note_rounded,
+                                      color: AppTheme.primary, size: 24),
                                   onPressed: () => _openOverrideDialog(student),
                                 ),
                               ],
