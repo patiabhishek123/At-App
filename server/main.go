@@ -47,6 +47,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Critical: database connection failed: %v", err)
 	}
+	if err := db.RunMigrations(dbConn); err != nil {
+		log.Fatalf("Critical: database migration failed: %v", err)
+	}
+	log.Println("Database migrations applied")
 	defer dbConn.Close()
 	log.Println("Database connection pool established")
 
@@ -120,23 +124,24 @@ func main() {
 	notificationConsumer.Start(consumerCtx)
 
 	// 8b. Start Background Data Pruning Loop
+	log.Printf("Raw verification signal retention: %s (checked every %s)", cfg.RawSignalRetention, cfg.RawSignalPruneInterval)
 	go func() {
 		// Run initial prune
-		pruned, err := verifService.PruneRawVerificationData(context.Background(), 24*time.Hour)
+		pruned, err := verifService.PruneRawVerificationData(context.Background(), cfg.RawSignalRetention)
 		if err != nil {
 			log.Printf("[Pruning Job] Error pruning raw verification data: %v", err)
 		} else if pruned > 0 {
 			log.Printf("[Pruning Job] Successfully pruned %d verification attempt raw location details on startup", pruned)
 		}
 
-		ticker := time.NewTicker(1 * time.Hour)
+		ticker := time.NewTicker(cfg.RawSignalPruneInterval)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-consumerCtx.Done():
 				return
 			case <-ticker.C:
-				pruned, err := verifService.PruneRawVerificationData(context.Background(), 24*time.Hour)
+				pruned, err := verifService.PruneRawVerificationData(context.Background(), cfg.RawSignalRetention)
 				if err != nil {
 					log.Printf("[Pruning Job] Error pruning raw verification data: %v", err)
 				} else if pruned > 0 {

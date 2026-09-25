@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Config holds the application configuration parameters.
@@ -37,6 +38,11 @@ type Config struct {
 	// logged instead of sent (any environment).
 	FCMProjectID          string
 	FCMServiceAccountJSON string
+
+	// Data retention: how long raw verification signals (BSSID, GPS) are kept
+	// before being scrubbed, and how often the prune job checks.
+	RawSignalRetention     time.Duration
+	RawSignalPruneInterval time.Duration
 }
 
 // Load reads config from environment variables or applies dev defaults.
@@ -69,6 +75,9 @@ func Load() Config {
 
 		FCMProjectID:          getEnv("FCM_PROJECT_ID", ""),
 		FCMServiceAccountJSON: getEnv("FCM_SERVICE_ACCOUNT_JSON", ""),
+
+		RawSignalRetention:     getEnvDuration("RAW_SIGNAL_RETENTION", 24*time.Hour),
+		RawSignalPruneInterval: getEnvDuration("RAW_SIGNAL_PRUNE_INTERVAL", 1*time.Hour),
 	}
 
 	return cfg
@@ -121,6 +130,17 @@ func getEnvInt(key string, defaultVal int) int {
 	if val, ok := os.LookupEnv(key); ok {
 		if intVal, err := strconv.Atoi(val); err == nil {
 			return intVal
+		}
+	}
+	return defaultVal
+}
+
+// getEnvDuration reads a Go duration string (e.g. "24h", "30m") from the
+// given env var, falling back to defaultVal if unset or invalid.
+func getEnvDuration(key string, defaultVal time.Duration) time.Duration {
+	if val, ok := os.LookupEnv(key); ok {
+		if d, err := time.ParseDuration(val); err == nil {
+			return d
 		}
 	}
 	return defaultVal

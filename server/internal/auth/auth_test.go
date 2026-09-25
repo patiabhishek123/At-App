@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"atapp/config"
@@ -25,16 +24,10 @@ func TestAuthFlow(t *testing.T) {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// Apply migration to ensure clean state
-	schemaSQL, err := os.ReadFile("../../db/migrations/001_init.sql")
-	if err != nil {
+	// Apply migrations to ensure clean state
+	if err := db.ResetSchemaForTests(dbConn); err != nil {
 		dbConn.Close()
-		t.Fatalf("Failed to read migration script: %v", err)
-	}
-	_, err = dbConn.Exec(string(schemaSQL))
-	if err != nil {
-		dbConn.Close()
-		t.Fatalf("Failed to execute migration script: %v", err)
+		t.Fatalf("Failed to reset schema: %v", err)
 	}
 
 	// Onboard college

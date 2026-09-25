@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -32,16 +31,10 @@ func TestVerificationServiceHardening(t *testing.T) {
 		t.Fatalf("Failed to connect to database as admin: %v", err)
 	}
 
-	// Apply migration to ensure clean state
-	schemaSQL, err := os.ReadFile("../../db/migrations/001_init.sql")
-	if err != nil {
+	// Apply migrations to ensure clean state
+	if err := db.ResetSchemaForTests(dbConnAdmin); err != nil {
 		dbConnAdmin.Close()
-		t.Fatalf("Failed to read migration script: %v", err)
-	}
-	_, err = dbConnAdmin.Exec(string(schemaSQL))
-	if err != nil {
-		dbConnAdmin.Close()
-		t.Fatalf("Failed to execute migration script: %v", err)
+		t.Fatalf("Failed to reset schema: %v", err)
 	}
 
 	// Insert college with custom policy: NRequired = 2, MaxAttempts = 2
@@ -250,14 +243,9 @@ func TestLoadCheckinPath(t *testing.T) {
 	}
 	defer dbConnAdmin.Close()
 
-	// Apply migration to ensure clean state
-	schemaSQL, err := os.ReadFile("../../db/migrations/001_init.sql")
-	if err != nil {
-		t.Fatalf("Failed to read migration script: %v", err)
-	}
-	_, err = dbConnAdmin.Exec(string(schemaSQL))
-	if err != nil {
-		t.Fatalf("Failed to execute migration script: %v", err)
+	// Apply migrations to ensure clean state
+	if err := db.ResetSchemaForTests(dbConnAdmin); err != nil {
+		t.Fatalf("Failed to reset schema: %v", err)
 	}
 
 	var collegeID string

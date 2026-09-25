@@ -1,7 +1,6 @@
 package db
 
 import (
-	"os"
 	"testing"
 )
 
@@ -22,17 +21,10 @@ func TestRowLevelSecurity(t *testing.T) {
 		t.Fatalf("Failed to connect to database: %v. Make sure docker-compose is running.", err)
 	}
 
-	// 2. Read and apply the database schema (migration 001_init.sql)
-	schemaSQL, err := os.ReadFile("migrations/001_init.sql")
-	if err != nil {
+	// 2. Apply the database schema via the versioned migration runner
+	if err := ResetSchemaForTests(dbConn); err != nil {
 		dbConn.Close()
-		t.Fatalf("Failed to read migration script: %v", err)
-	}
-
-	_, err = dbConn.Exec(string(schemaSQL))
-	if err != nil {
-		dbConn.Close()
-		t.Fatalf("Failed to execute migration script: %v", err)
+		t.Fatalf("Failed to reset schema: %v", err)
 	}
 
 	// Onboard College A and College B using the superuser admin connection
