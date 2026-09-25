@@ -133,7 +133,7 @@ func (c *Consumer) Start(ctx context.Context) {
 			body := fmt.Sprintf("Your attendance in %s has dropped to %.2f%%, falling below the required %.2f%% threshold.", 
 				courseCode, ev.CurrentPct, ev.ThresholdPct)
 
-			_ = c.notifier.SendPushNotification(ctx, ev.StudentID, title, body)
+			_ = c.notifier.SendPushNotification(ctx, ev.CollegeID, ev.StudentID, title, body)
 		}
 	}()
 }
@@ -178,7 +178,7 @@ func (c *Consumer) notifyEnrolledStudents(ctx context.Context, ev event.SessionS
 	body := fmt.Sprintf("The attendance session for %s is now active. Please check in.", courseCode)
 
 	for _, studentID := range studentIDs {
-		_ = c.notifier.SendPushNotification(ctx, studentID, title, body)
+		_ = c.notifier.SendPushNotification(ctx, ev.CollegeID, studentID, title, body)
 	}
 
 	return nil

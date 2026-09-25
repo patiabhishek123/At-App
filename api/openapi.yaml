@@ -6,6 +6,87 @@ info:
 servers:
   - url: /api/v1
 paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      description: Unauthenticated. Always returns 200 if the process is running; does not check dependencies.
+      security: []
+      responses:
+        '200':
+          description: Process is alive
+
+  /readyz:
+    get:
+      summary: Readiness probe
+      description: Unauthenticated. Checks database and Redis connectivity.
+      security: []
+      responses:
+        '200':
+          description: Ready to serve traffic
+        '503':
+          description: A dependency (database or Redis) is unreachable
+
+  /platform/colleges:
+    post:
+      summary: Onboard a new college tenant
+      description: >
+        Platform-level endpoint with no tenant context yet; gated by the shared
+        X-Platform-Admin-Key header instead of a per-tenant JWT. Creates the
+        college and its first admin user atomically.
+      security:
+        - PlatformAdminKey: []
+      parameters:
+        - name: X-Platform-Admin-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - adminName
+                - adminEmail
+                - adminPassword
+              properties:
+                name:
+                  type: string
+                  example: MIT
+                adminName:
+                  type: string
+                  example: Root Admin
+                adminEmail:
+                  type: string
+                  format: email
+                adminPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '201':
+          description: College and initial admin created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  adminUserId:
+                    type: string
+                    format: uuid
+        '400':
+          description: Missing or invalid fields
+        '403':
+          description: Missing or invalid platform admin key
+
   /auth/login:
     post:
       summary: Authenticate user
@@ -91,6 +172,58 @@ paths:
         '401':
           description: Invalid or expired refresh token
 
+  /auth/password-reset/request:
+    post:
+      summary: Request a password reset
+      description: >
+        Always returns 200 with a generic message whether or not the email is
+        registered, to avoid leaking which accounts exist. The reset token is
+        currently logged server-side rather than emailed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Request accepted (does not confirm the account exists)
+        '429':
+          description: Rate limited
+
+  /auth/password-reset/confirm:
+    post:
+      summary: Confirm a password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - newPassword
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '200':
+          description: Password updated successfully
+        '400':
+          description: Invalid or expired reset token, or password too short
+        '429':
+          description: Rate limited
+
   /teacher/sessions:
     post:
       summary: Start a class session
@@ -136,6 +269,37 @@ paths:
                     example: 10
         '403':
           description: Unauthorized role (requires teacher)
+        '404':
+          description: Section not found or not assigned to this teacher
+        '409':
+          description: A session is already active for this section
+
+  /teacher/sessions/{sessionId}/code:
+    get:
+      summary: Get or rotate the current check-in code for an active session
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Current (or newly rotated) code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentCode:
+                    type: string
+                  codeExpiresInSeconds:
+                    type: integer
+        '404':
+          description: Active session not found or not assigned to this teacher
 
   /teacher/sessions/{sessionId}/end:
     post:
@@ -169,6 +333,10 @@ paths:
                         type: integer
                       overrideCount:
                         type: integer
+        '404':
+          description: Session not found or not assigned to this teacher
+        '409':
+          description: Session is already ended
 
   /student/checkin:
     post:
@@ -219,7 +387,9 @@ paths:
                     nullable: true
                     example: "Out of classroom geofence"
         '400':
-          description: Invalid parameters or no active session found
+          description: Invalid request parameters
+        '404':
+          description: No active class session found for the student's enrolled courses
 
   /teacher/attendance/overrides:
     post:
@@ -263,6 +433,399 @@ paths:
                     format: uuid
                   status:
                     type: string
+        '400':
+          description: Invalid status value
+        '404':
+          description: Session not found or not taught by this teacher
+
+  /teacher/sections:
+    get:
+      summary: List sections taught by the authenticated teacher
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of teacher's sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sectionId:
+                      type: string
+                      format: uuid
+                    term:
+                      type: string
+                    courseName:
+                      type: string
+                    courseCode:
+                      type: string
+                    classroomBssid:
+                      type: string
+                      nullable: true
+                    classroomGeofenceLat:
+                      type: number
+                      nullable: true
+                    classroomGeofenceLng:
+                      type: number
+                      nullable: true
+                    classroomGeofenceRadiusM:
+                      type: number
+                      nullable: true
+
+  /teacher/sessions/{sessionId}/roster:
+    get:
+      summary: Get the attendance roster for a class session
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Roster with per-student check-in status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    studentId:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                    email:
+                      type: string
+                    status:
+                      type: string
+                      enum: [present, absent, overridden_present, overridden_absent, pending]
+                    recordedAt:
+                      type: string
+                      format: date-time
+                      nullable: true
+        '403':
+          description: This teacher does not teach the section this session belongs to
+        '404':
+          description: Session not found
+
+  /teacher/sections/{sectionId}/dashboard:
+    get:
+      summary: Get per-student attendance averages for a section
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of student attendance summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    studentId:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                    email:
+                      type: string
+                    presentCount:
+                      type: integer
+                    totalSessions:
+                      type: integer
+                    attendancePct:
+                      type: number
+        '403':
+          description: This teacher does not teach this section
+        '404':
+          description: Section not found
+
+  /teacher/sections/{sectionId}/sessions:
+    get:
+      summary: Get past class session history for a section
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of past sessions and their attendance counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sessionId:
+                      type: string
+                      format: uuid
+                    startedAt:
+                      type: string
+                      format: date-time
+                    endedAt:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    presentCount:
+                      type: integer
+                    absentCount:
+                      type: integer
+        '403':
+          description: This teacher does not teach this section
+        '404':
+          description: Section not found
+
+  /admin/users:
+    post:
+      summary: Create a user in the admin's own college
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+                - name
+                - email
+                - password
+              properties:
+                role:
+                  type: string
+                  enum: [student, teacher, admin]
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+        '400':
+          description: Missing fields or invalid role
+        '403':
+          description: Requires admin role
+
+  /admin/departments:
+    post:
+      summary: Create a department in the admin's own college
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Department created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+        '403':
+          description: Requires admin role
+
+  /admin/courses:
+    post:
+      summary: Create a course under a department
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - departmentId
+                - name
+                - code
+              properties:
+                departmentId:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                code:
+                  type: string
+                attendanceThresholdPct:
+                  type: number
+                  nullable: true
+      responses:
+        '201':
+          description: Course created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+        '403':
+          description: Requires admin role
+
+  /admin/sections:
+    post:
+      summary: Create a class section for a course
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+                - term
+                - teacherId
+              properties:
+                courseId:
+                  type: string
+                  format: uuid
+                term:
+                  type: string
+                teacherId:
+                  type: string
+                  format: uuid
+                classroomBssid:
+                  type: string
+                  nullable: true
+                classroomGeofenceLat:
+                  type: number
+                  nullable: true
+                classroomGeofenceLng:
+                  type: number
+                  nullable: true
+                classroomGeofenceRadiusM:
+                  type: number
+                  nullable: true
+      responses:
+        '201':
+          description: Section created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+        '403':
+          description: Requires admin role
+
+  /admin/import/users:
+    post:
+      summary: Bulk import users from a CSV file
+      description: "CSV format: role,name,email,password"
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Import summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                  message:
+                    type: string
+        '403':
+          description: Requires admin role
+
+  /admin/import/enrollments:
+    post:
+      summary: Bulk import student enrollments from a CSV file
+      description: "CSV format: student_email,section_id"
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Import summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                  message:
+                    type: string
+        '403':
+          description: Requires admin role
 
   /student/courses:
     get:
@@ -304,3 +867,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    PlatformAdminKey:
+      type: apiKey
+      in: header
+      name: X-Platform-Admin-Key

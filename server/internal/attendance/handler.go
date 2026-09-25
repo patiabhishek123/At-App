@@ -64,7 +64,7 @@ func (h *Handler) handleOverride(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.service.SubmitOverride(r.Context(), collegeID, teacherID, req.SessionID, req.StudentID, req.Status, req.Reason)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -81,7 +81,7 @@ func (h *Handler) handleGetCourses(w http.ResponseWriter, r *http.Request) {
 
 	list, err := h.service.GetStudentCourses(r.Context(), collegeID, studentID)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -98,7 +98,7 @@ func (h *Handler) handleGetTeacherSections(w http.ResponseWriter, r *http.Reques
 
 	list, err := h.service.GetTeacherSections(r.Context(), collegeID, teacherID)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -120,7 +120,7 @@ func (h *Handler) handleGetSessionRoster(w http.ResponseWriter, r *http.Request)
 
 	list, err := h.service.GetSessionRoster(r.Context(), collegeID, sessionID, teacherID)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -142,7 +142,7 @@ func (h *Handler) handleGetSectionDashboard(w http.ResponseWriter, r *http.Reque
 
 	list, err := h.service.GetSectionDashboard(r.Context(), collegeID, sectionID, teacherID)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -164,7 +164,7 @@ func (h *Handler) handleGetSectionHistory(w http.ResponseWriter, r *http.Request
 
 	list, err := h.service.GetSectionHistory(r.Context(), collegeID, sectionID, teacherID)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 

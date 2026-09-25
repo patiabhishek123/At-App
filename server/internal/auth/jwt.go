@@ -18,8 +18,9 @@ type Claims struct {
 }
 
 const (
-	TokenTypeAccess  = "access"
-	TokenTypeRefresh = "refresh"
+	TokenTypeAccess        = "access"
+	TokenTypeRefresh       = "refresh"
+	TokenTypePasswordReset = "password_reset"
 )
 
 // TokenPair bundles the access and refresh tokens.
@@ -72,6 +73,30 @@ func GenerateTokenPair(userID, role, collegeID string, secret []byte) (TokenPair
 		AccessToken:  accessStr,
 		RefreshToken: refreshStr,
 	}, nil
+}
+
+// GeneratePasswordResetToken issues a short-lived, single-purpose token used
+// to authorize a password change without requiring the current password.
+func GeneratePasswordResetToken(userID, role, collegeID string, secret []byte) (string, error) {
+	now := time.Now()
+	claims := Claims{
+		UserID:    userID,
+		Role:      role,
+		CollegeID: collegeID,
+		TokenType: TokenTypePasswordReset,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(30 * time.Minute)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			Subject:   userID,
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(secret)
+}
+
+// ValidatePasswordResetToken parses a JWT and requires a password-reset purpose.
+func ValidatePasswordResetToken(tokenStr string, secret []byte) (*Claims, error) {
+	return validateToken(tokenStr, secret, TokenTypePasswordReset)
 }
 
 // ValidateAccessToken parses a JWT and requires an access-token purpose.

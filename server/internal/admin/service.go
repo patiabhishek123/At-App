@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 
 	"atapp/db"
+	"atapp/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -25,7 +27,7 @@ func NewService(dbConn *sql.DB) *Service {
 // CreateUser creates a user in the authenticated administrator's college.
 func (s *Service) CreateUser(ctx context.Context, collegeID, role, name, email, password string) (string, error) {
 	if role != "student" && role != "teacher" && role != "admin" {
-		return "", errors.New("invalid role: must be student, teacher, or admin")
+		return "", utils.NewAppError(http.StatusBadRequest, "invalid role: must be student, teacher, or admin")
 	}
 
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

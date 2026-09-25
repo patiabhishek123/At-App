@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"atapp/db"
 	"atapp/internal/event"
+	"atapp/internal/utils"
 )
 
 // Service manages attendance overrides and query reports.
@@ -34,7 +36,7 @@ type OverrideResult struct {
 // SubmitOverride records a teacher manual override (present/absent) and audit log under RLS.
 func (s *Service) SubmitOverride(ctx context.Context, collegeID, teacherID, sessionID, studentID, status, reason string) (OverrideResult, error) {
 	if status != "overridden_present" && status != "overridden_absent" {
-		return OverrideResult{}, errors.New("invalid status: must be overridden_present or overridden_absent")
+		return OverrideResult{}, utils.NewAppError(http.StatusBadRequest, "invalid status: must be overridden_present or overridden_absent")
 	}
 
 	tx, err := s.dbConn.BeginTx(ctx, nil)
@@ -57,7 +59,7 @@ func (s *Service) SubmitOverride(ctx context.Context, collegeID, teacherID, sess
 	`, sessionID, teacherID).Scan(&sectionID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return OverrideResult{}, errors.New("class session not found or you are not authorized to override attendance for it")
+			return OverrideResult{}, utils.NewAppError(http.StatusNotFound, "class session not found or you are not authorized to override attendance for it")
 		}
 		return OverrideResult{}, err
 	}
@@ -245,12 +247,12 @@ func (s *Service) GetSessionRoster(ctx context.Context, collegeID, sessionID, te
 	`, sessionID).Scan(&ownerID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("class session not found")
+			return nil, utils.NewAppError(http.StatusNotFound, "class session not found")
 		}
 		return nil, err
 	}
 	if ownerID != teacherID {
-		return nil, errors.New("unauthorized: you do not teach this section")
+		return nil, utils.NewAppError(http.StatusForbidden, "unauthorized: you do not teach this section")
 	}
 
 	query := `
@@ -311,12 +313,12 @@ func (s *Service) GetSectionDashboard(ctx context.Context, collegeID, sectionID,
 	err = tx.QueryRowContext(ctx, `SELECT teacher_id FROM sections WHERE id = $1`, sectionID).Scan(&ownerID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("section not found")
+			return nil, utils.NewAppError(http.StatusNotFound, "section not found")
 		}
 		return nil, err
 	}
 	if ownerID != teacherID {
-		return nil, errors.New("unauthorized: you do not teach this section")
+		return nil, utils.NewAppError(http.StatusForbidden, "unauthorized: you do not teach this section")
 	}
 
 	query := `
@@ -375,12 +377,12 @@ func (s *Service) GetSectionHistory(ctx context.Context, collegeID, sectionID, t
 	err = tx.QueryRowContext(ctx, `SELECT teacher_id FROM sections WHERE id = $1`, sectionID).Scan(&ownerID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("section not found")
+			return nil, utils.NewAppError(http.StatusNotFound, "section not found")
 		}
 		return nil, err
 	}
 	if ownerID != teacherID {
-		return nil, errors.New("unauthorized: you do not teach this section")
+		return nil, utils.NewAppError(http.StatusForbidden, "unauthorized: you do not teach this section")
 	}
 
 	query := `

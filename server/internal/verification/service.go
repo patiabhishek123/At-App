@@ -7,11 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/http"
 	"strconv"
 	"time"
 
 	"atapp/db"
 	"atapp/internal/event"
+	"atapp/internal/utils"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -112,7 +114,7 @@ func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return CheckinResult{}, errors.New("no active class session found for your enrolled courses")
+			return CheckinResult{}, utils.NewAppError(http.StatusNotFound, "no active class session found for your enrolled courses")
 		}
 		return CheckinResult{}, fmt.Errorf("failed to lookup active session: %w", err)
 	}

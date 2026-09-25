@@ -38,7 +38,8 @@ CREATE TABLE users (
     role TEXT NOT NULL CHECK (role IN ('student', 'teacher', 'admin')),
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    fcm_token TEXT
 );
 
 -- 4. courses

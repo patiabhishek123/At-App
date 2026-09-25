@@ -75,7 +75,7 @@ func (h *Handler) handleStartSession(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.service.StartSession(r.Context(), collegeID, teacherID, req.SectionID, lat, lng, radius)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -102,7 +102,7 @@ func (h *Handler) handleEndSession(w http.ResponseWriter, r *http.Request) {
 
 	summary, err := h.service.EndSession(r.Context(), collegeID, teacherID, sessionID)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (h *Handler) handleGetCode(w http.ResponseWriter, r *http.Request) {
 
 	code, expires, err := h.service.GetOrRotateCode(r.Context(), collegeID, teacherID, sessionID)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 

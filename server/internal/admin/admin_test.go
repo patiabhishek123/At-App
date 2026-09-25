@@ -150,7 +150,7 @@ func testAdminAccountCreationRoutes(t *testing.T, service *Service, collegeID st
 
 	// The public auth router deliberately has no signup endpoint.
 	publicRouter := chi.NewRouter()
-	auth.NewHandler(nil).RegisterPublicRoutes(publicRouter)
+	auth.NewHandler(nil).RegisterPublicRoutes(publicRouter, nil)
 	publicRequest := httptest.NewRequest(http.MethodPost, "/auth/signup", bytes.NewBufferString(`{
 		"collegeId":"attacker-selected", "role":"admin", "name":"Attacker",
 		"email":"attacker@example.com", "password":"password"

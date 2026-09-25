@@ -60,7 +60,7 @@ func (h *Handler) handleCheckin(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.service.SubmitCheckin(r.Context(), collegeID, studentID, req.Code, req.Bssid, req.Gps.Lat, req.Gps.Lng)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 

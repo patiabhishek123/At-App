@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/http"
 	"time"
 
 	"atapp/db"
 	"atapp/internal/event"
+	"atapp/internal/utils"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -61,7 +63,7 @@ func (s *Service) StartSession(ctx context.Context, collegeID, teacherID, sectio
 		return StartSessionResult{}, fmt.Errorf("failed to verify section ownership: %w", err)
 	}
 	if !exists {
-		return StartSessionResult{}, errors.New("section not found or not assigned to you")
+		return StartSessionResult{}, utils.NewAppError(http.StatusNotFound, "section not found or not assigned to you")
 	}
 
 	// Verify no active session currently exists for this section
@@ -71,7 +73,7 @@ func (s *Service) StartSession(ctx context.Context, collegeID, teacherID, sectio
 		return StartSessionResult{}, err
 	}
 	if activeExists {
-		return StartSessionResult{}, errors.New("a session is already active for this section")
+		return StartSessionResult{}, utils.NewAppError(http.StatusConflict, "a session is already active for this section")
 	}
 
 	initialCode := generateCode()
@@ -141,7 +143,7 @@ func (s *Service) GetOrRotateCode(ctx context.Context, collegeID, teacherID, ses
 	`, sessionID, teacherID).Scan(&oldCode)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", 0, errors.New("active class session not found or not assigned to you")
+			return "", 0, utils.NewAppError(http.StatusNotFound, "active class session not found or not assigned to you")
 		}
 		return "", 0, err
 	}
@@ -204,12 +206,12 @@ func (s *Service) EndSession(ctx context.Context, collegeID, teacherID, sessionI
 	`, sessionID, teacherID).Scan(&sectionID, &endedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return SessionSummary{}, errors.New("class session not found or not assigned to you")
+			return SessionSummary{}, utils.NewAppError(http.StatusNotFound, "class session not found or not assigned to you")
 		}
 		return SessionSummary{}, err
 	}
 	if endedAt.Valid {
-		return SessionSummary{}, errors.New("class session is already ended")
+		return SessionSummary{}, utils.NewAppError(http.StatusConflict, "class session is already ended")
 	}
 
 	endedTime := time.Now()

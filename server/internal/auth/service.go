@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 
 	"atapp/config"
 	"atapp/db"
@@ -14,20 +15,51 @@ import (
 var (
 	// ErrInvalidCredentials represents login failure.
 	ErrInvalidCredentials = errors.New("invalid email or password")
+	// ErrUserNotFound is returned when no user matches the given email.
+	ErrUserNotFound = errors.New("user not found")
 )
+
+// EmailSender delivers transactional emails (e.g. password resets). Defined
+// locally (rather than importing internal/notification's identical
+// interface) to avoid an import cycle, since internal/notification's HTTP
+// handler depends on internal/gateway, which depends on this package. Any
+// notification.EmailSender implementation satisfies this interface
+// structurally.
+type EmailSender interface {
+	SendEmail(ctx context.Context, to, subject, body string) error
+}
+
+// consoleEmailSender logs emails instead of sending them; used until a real
+// sender is wired in via SetEmailSender.
+type consoleEmailSender struct{}
+
+func (consoleEmailSender) SendEmail(ctx context.Context, to, subject, body string) error {
+	log.Printf("[EMAIL] to=%s subject=%q body=%q\n", to, subject, body)
+	return nil
+}
 
 // Service manages authentication and signup business logic.
 type Service struct {
-	dbConn *sql.DB
-	cfg    config.Config
+	dbConn      *sql.DB
+	cfg         config.Config
+	emailSender EmailSender
 }
 
-// NewService instantiates a new authentication service.
+// NewService instantiates a new authentication service. Emails (e.g.
+// password resets) are logged rather than sent until SetEmailSender is
+// called with a real sender.
 func NewService(dbConn *sql.DB, cfg config.Config) *Service {
 	return &Service{
-		dbConn: dbConn,
-		cfg:    cfg,
+		dbConn:      dbConn,
+		cfg:         cfg,
+		emailSender: consoleEmailSender{},
 	}
+}
+
+// SetEmailSender overrides the email delivery mechanism (e.g. with a real
+// SMTP sender), used for outbound account emails like password resets.
+func (s *Service) SetEmailSender(sender EmailSender) {
+	s.emailSender = sender
 }
 
 // UserDTO defines the user info payload returned to clients upon auth success.
@@ -120,6 +152,69 @@ func (s *Service) SignUp(ctx context.Context, collegeID, role, name, email, pass
 		Role:      role,
 		CollegeID: collegeID,
 	}, nil
+}
+
+// RequestPasswordReset issues a short-lived reset token for the given email
+// if an account exists, and delivers it via the configured EmailSender (logs
+// it if none is configured). The handler layer must still respond
+// identically whether or not the account exists, to avoid leaking which
+// emails are registered.
+func (s *Service) RequestPasswordReset(ctx context.Context, email string) error {
+	var id, collegeID, role, name, hash string
+	err := s.dbConn.QueryRowContext(ctx, "SELECT id, college_id, role, name, password_hash FROM get_user_for_auth($1)", email).
+		Scan(&id, &collegeID, &role, &name, &hash)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUserNotFound
+		}
+		return fmt.Errorf("failed to lookup user: %w", err)
+	}
+
+	token, err := GeneratePasswordResetToken(id, role, collegeID, []byte(s.cfg.JWTSecret))
+	if err != nil {
+		return fmt.Errorf("failed to generate password reset token: %w", err)
+	}
+
+	subject := "Reset your AtApp password"
+	body := fmt.Sprintf("Hi %s,\n\nUse this token to reset your password (valid for 30 minutes):\n\n%s\n\nIf you didn't request this, you can ignore this email.", name, token)
+	if err := s.emailSender.SendEmail(ctx, email, subject, body); err != nil {
+		return fmt.Errorf("failed to send password reset email: %w", err)
+	}
+
+	return nil
+}
+
+// ConfirmPasswordReset validates a reset token and sets the account's new password.
+func (s *Service) ConfirmPasswordReset(ctx context.Context, tokenStr, newPassword string) error {
+	claims, err := ValidatePasswordResetToken(tokenStr, []byte(s.cfg.JWTSecret))
+	if err != nil {
+		return fmt.Errorf("invalid or expired reset token: %w", err)
+	}
+
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	tx, err := s.dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := db.WithTenant(tx, claims.CollegeID); err != nil {
+		return err
+	}
+
+	res, err := tx.ExecContext(ctx, "UPDATE users SET password_hash = $1 WHERE id = $2", string(hashedBytes), claims.UserID)
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrUserNotFound
+	}
+
+	return tx.Commit()
 }
 
 // Refresh generates a new token pair from a valid, unexpired refresh token.

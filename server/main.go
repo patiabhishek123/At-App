@@ -20,6 +20,8 @@ import (
 	"atapp/internal/notification"
 	"atapp/internal/reporting"
 	"atapp/internal/session"
+	"atapp/internal/tenant"
+	"atapp/internal/utils"
 	"atapp/internal/verification"
 
 	"github.com/go-chi/chi/v5"
@@ -57,10 +59,7 @@ func main() {
 	log.Println("Redis connection established")
 
 	// 4. Initialize Event Bus (Kafka/Redpanda)
-	brokers := []string{os.Getenv("KAFKA_BROKERS")}
-	if len(brokers) == 0 || brokers[0] == "" {
-		brokers = []string{"localhost:19092"}
-	}
+	brokers := cfg.KafkaBrokers
 	var eventBus event.EventBus = event.NewKafkaEventBus(brokers)
 	defer func() {
 		if err := eventBus.Close(); err != nil {
@@ -72,17 +71,31 @@ func main() {
 	// 5. Instantiate services
 	authService := auth.NewService(dbConn, cfg)
 	adminService := admin.NewService(dbConn)
+	tenantService := tenant.NewService(dbConn)
 	sessionService := session.NewService(dbConn, rdb, eventBus)
 	verifService := verification.NewService(dbConn, rdb, eventBus)
 	attendanceService := attendance.NewService(dbConn, eventBus)
 	updaterService := reporting.NewUpdater(dbConn, eventBus)
+	notificationPrefsService := notification.NewService(dbConn)
+
+	// Wire real email delivery (falls back to console logging if SMTP isn't configured).
+	emailSender := notification.NewEmailSenderFromConfig(notification.SMTPConfig{
+		Host:     cfg.SMTPHost,
+		Port:     cfg.SMTPPort,
+		Username: cfg.SMTPUsername,
+		Password: cfg.SMTPPassword,
+		From:     cfg.SMTPFrom,
+	})
+	authService.SetEmailSender(emailSender)
 
 	// 6. Instantiate handlers
 	authHandler := auth.NewHandler(authService)
 	adminHandler := admin.NewHandler(adminService)
+	tenantHandler := tenant.NewHandler(tenantService)
 	sessionHandler := session.NewHandler(sessionService)
 	verifHandler := verification.NewHandler(verifService)
 	attendanceHandler := attendance.NewHandler(attendanceService)
+	notificationPrefsHandler := notification.NewHandler(notificationPrefsService)
 
 	// 7. Start Asynchronous Aggregate Reporting Consumer
 	consumerCtx, consumerCancel := context.WithCancel(context.Background())
@@ -92,7 +105,17 @@ func main() {
 	reportingConsumer.Start(consumerCtx)
 
 	// 8. Start Asynchronous Notification Consumer
-	notifier := notification.NewConsoleNotifier()
+	var notifier notification.Notifier = notification.NewConsoleNotifier()
+	if cfg.FCMProjectID != "" && cfg.FCMServiceAccountJSON != "" {
+		fcmNotifier, err := notification.NewFCMNotifier(dbConn, cfg.FCMProjectID, []byte(cfg.FCMServiceAccountJSON))
+		if err != nil {
+			log.Fatalf("Critical: failed to initialize FCM notifier: %v", err)
+		}
+		notifier = fcmNotifier
+		log.Println("Push notifications: using FCM")
+	} else {
+		log.Println("Push notifications: FCM not configured, logging to console instead")
+	}
 	notificationConsumer := notification.NewConsumer(brokers, notifier, dbConn)
 	notificationConsumer.Start(consumerCtx)
 
@@ -131,9 +154,23 @@ func main() {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	// CORS configuration
+	allowedOrigins := make(map[string]bool, len(cfg.AllowedOrigins))
+	allowAll := false
+	for _, o := range cfg.AllowedOrigins {
+		if o == "*" {
+			allowAll = true
+		}
+		allowedOrigins[o] = true
+	}
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
+			origin := r.Header.Get("Origin")
+			if allowAll {
+				w.Header().Set("Access-Control-Allow-Origin", "*")
+			} else if origin != "" && allowedOrigins[origin] {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
+			}
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			if r.Method == "OPTIONS" {
@@ -144,10 +181,37 @@ func main() {
 		})
 	})
 
+	// Unauthenticated health/readiness probes (for load balancers / k8s).
+	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+	r.Get("/readyz", func(w http.ResponseWriter, r *http.Request) {
+		if err := dbConn.PingContext(r.Context()); err != nil {
+			utils.WriteError(w, http.StatusServiceUnavailable, "database not ready")
+			return
+		}
+		if err := rdb.Ping(r.Context()).Err(); err != nil {
+			utils.WriteError(w, http.StatusServiceUnavailable, "redis not ready")
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ready"))
+	})
+
 	// 9. Register endpoints under /api/v1
+	authRateLimit := gateway.RateLimit(rdb, "auth", 10, time.Minute)
 	r.Route("/api/v1", func(r chi.Router) {
 		// Public Auth routes
-		authHandler.RegisterPublicRoutes(r)
+		authHandler.RegisterPublicRoutes(r, authRateLimit)
+
+		// Platform-level tenant onboarding (no tenant context yet; gated by a
+		// shared platform admin key instead of a per-tenant JWT).
+		r.Group(func(r chi.Router) {
+			r.Use(gateway.RequirePlatformKey(cfg.PlatformAdminKey))
+			r.Use(authRateLimit)
+			tenantHandler.RegisterRoutes(r)
+		})
 
 		// Authenticated Tenant Context routes
 		r.Group(func(r chi.Router) {
@@ -157,6 +221,7 @@ func main() {
 			sessionHandler.RegisterRoutes(r)
 			verifHandler.RegisterRoutes(r)
 			attendanceHandler.RegisterRoutes(r)
+			notificationPrefsHandler.RegisterRoutes(r)
 
 			r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)

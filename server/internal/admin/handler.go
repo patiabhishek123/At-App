@@ -66,7 +66,7 @@ func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.service.CreateUser(r.Context(), collegeID, req.Role, req.Name, req.Email, req.Password)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *Handler) handleCreateDepartment(w http.ResponseWriter, r *http.Request)
 
 	id, err := h.service.CreateDepartment(r.Context(), collegeID, req.Name)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -131,7 +131,7 @@ func (h *Handler) handleCreateCourse(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.service.CreateCourse(r.Context(), collegeID, req.DepartmentID, req.Name, req.Code, req.AttendanceThresholdPct)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -169,7 +169,7 @@ func (h *Handler) handleCreateSection(w http.ResponseWriter, r *http.Request) {
 	id, err := h.service.CreateSection(r.Context(), collegeID, req.CourseID, req.Term, req.TeacherID,
 		req.ClassroomBssid, req.ClassroomGeofenceLat, req.ClassroomGeofenceLng, req.ClassroomGeofenceRadiusM)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (h *Handler) handleImportUsers(w http.ResponseWriter, r *http.Request) {
 
 	count, err := h.service.BulkImportUsersCSV(r.Context(), collegeID, file)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
@@ -228,7 +228,7 @@ func (h *Handler) handleImportEnrollments(w http.ResponseWriter, r *http.Request
 
 	count, err := h.service.BulkImportEnrollmentsCSV(r.Context(), collegeID, file)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteServiceError(w, err)
 		return
 	}
 
