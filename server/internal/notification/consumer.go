@@ -10,8 +10,20 @@ import (
 
 	"atapp/db"
 	"atapp/internal/event"
+	"atapp/internal/observability"
 	"github.com/segmentio/kafka-go"
 )
+
+// contextFromHeaders rebuilds a context carrying the producer's trace
+// context (if any) from a Kafka message's headers, so this consumer's work
+// can be linked back to the request that published the event.
+func contextFromHeaders(ctx context.Context, headers []kafka.Header) context.Context {
+	carrier := make(map[string]string, len(headers))
+	for _, h := range headers {
+		carrier[h.Key] = string(h.Value)
+	}
+	return observability.ExtractTraceContext(ctx, carrier)
+}
 
 // Consumer manages background Kafka topic readers for notification dispatch.
 type Consumer struct {
@@ -78,10 +90,13 @@ func (c *Consumer) Start(ctx context.Context) {
 				continue
 			}
 
-			err = c.notifyEnrolledStudents(ctx, ev)
+			msgCtx := contextFromHeaders(ctx, m.Headers)
+			msgCtx, span := observability.Tracer().Start(msgCtx, "event.consume session.started")
+			err = c.notifyEnrolledStudents(msgCtx, ev)
 			if err != nil {
 				log.Printf("Failed to notify students for session %s: %v\n", ev.SessionID, err)
 			}
+			span.End()
 		}
 	}()
 

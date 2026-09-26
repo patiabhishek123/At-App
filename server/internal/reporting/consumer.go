@@ -7,8 +7,19 @@ import (
 	"time"
 
 	"atapp/internal/event"
+	"atapp/internal/observability"
 	"github.com/segmentio/kafka-go"
 )
+
+// contextFromHeaders rebuilds a context carrying the producer's trace
+// context (if any) from a Kafka message's headers.
+func contextFromHeaders(ctx context.Context, headers []kafka.Header) context.Context {
+	carrier := make(map[string]string, len(headers))
+	for _, h := range headers {
+		carrier[h.Key] = string(h.Value)
+	}
+	return observability.ExtractTraceContext(ctx, carrier)
+}
 
 // Consumer listens for attendance recorded events from Kafka and triggers aggregates recalculation.
 type Consumer struct {
@@ -62,10 +73,13 @@ func (c *Consumer) Start(ctx context.Context) {
 			log.Printf("[Event Consumer] Received attendance outcome: RecordID=%s, StudentID=%s, SectionID=%s, Status=%s\n",
 				ev.RecordID, ev.StudentID, ev.SectionID, ev.Status)
 
-			err = c.updater.UpdateAggregate(ctx, ev.CollegeID, ev.StudentID, ev.SectionID)
+			msgCtx := contextFromHeaders(ctx, m.Headers)
+			msgCtx, span := observability.Tracer().Start(msgCtx, "event.consume attendance.recorded")
+			err = c.updater.UpdateAggregate(msgCtx, ev.CollegeID, ev.StudentID, ev.SectionID)
 			if err != nil {
 				log.Printf("Reporting consumer error updating aggregates: %v\n", err)
 			}
+			span.End()
 		}
 	}()
 }

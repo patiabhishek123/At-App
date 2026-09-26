@@ -13,6 +13,7 @@ import (
 
 	"atapp/db"
 	"atapp/internal/event"
+	"atapp/internal/observability"
 	"atapp/internal/utils"
 	"github.com/redis/go-redis/v9"
 )
@@ -57,6 +58,9 @@ func distance(lat1, lon1, lat2, lon2 float64) float64 {
 
 // SubmitCheckin checks student credentials, Wi-Fi BSSID, and GPS locations.
 func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string, code, submittedBssid string, lat, lng float64) (CheckinResult, error) {
+	ctx, span := observability.Tracer().Start(ctx, "verification.SubmitCheckin")
+	defer span.End()
+
 	tx, err := s.dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return CheckinResult{}, err
@@ -126,6 +130,7 @@ func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string
 		attempts, _ := strconv.Atoi(attemptsStr)
 		if attempts >= policy.MaxAttempts {
 			reason := "rate limit exceeded: too many failed check-in attempts for this session"
+			observability.CheckinsTotal.WithLabelValues("rejected").Inc()
 			return CheckinResult{
 				Result:          "rejected",
 				RejectionReason: &reason,
@@ -138,6 +143,7 @@ func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string
 	err = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM attendance_records WHERE session_id = $1 AND student_id = $2 AND status = 'present')", sessionID, studentID).Scan(&alreadyCheckedIn)
 	if err == nil && alreadyCheckedIn {
 		reason := "already checked in for this session"
+		observability.CheckinsTotal.WithLabelValues("rejected").Inc()
 		return CheckinResult{
 			Result:          "rejected",
 			RejectionReason: &reason,
@@ -225,6 +231,7 @@ func (s *Service) SubmitCheckin(ctx context.Context, collegeID, studentID string
 	if err != nil {
 		return CheckinResult{}, fmt.Errorf("failed to save checkin verification attempt: %w", err)
 	}
+	observability.CheckinsTotal.WithLabelValues(result).Inc()
 
 	var recordID string
 	recordedTime := time.Now()

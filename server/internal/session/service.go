@@ -12,6 +12,7 @@ import (
 
 	"atapp/db"
 	"atapp/internal/event"
+	"atapp/internal/observability"
 	"atapp/internal/utils"
 	"github.com/redis/go-redis/v9"
 )
@@ -46,6 +47,9 @@ func generateCode() string {
 
 // StartSession initializes a new class session under RLS.
 func (s *Service) StartSession(ctx context.Context, collegeID, teacherID, sectionID string, lat, lng, radius *float64) (StartSessionResult, error) {
+	ctx, span := observability.Tracer().Start(ctx, "session.StartSession")
+	defer span.End()
+
 	tx, err := s.dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return StartSessionResult{}, err
@@ -94,6 +98,7 @@ func (s *Service) StartSession(ctx context.Context, collegeID, teacherID, sectio
 	if err := tx.Commit(); err != nil {
 		return StartSessionResult{}, err
 	}
+	observability.ActiveSessions.Inc()
 
 	// Write code to Redis with 10s TTL
 	codeKey := fmt.Sprintf("session:%s:code", sessionID)
@@ -186,6 +191,9 @@ type SessionSummary struct {
 
 // EndSession closes a session, records absences for non-attendees, and cleans up Redis.
 func (s *Service) EndSession(ctx context.Context, collegeID, teacherID, sessionID string) (SessionSummary, error) {
+	ctx, span := observability.Tracer().Start(ctx, "session.EndSession")
+	defer span.End()
+
 	tx, err := s.dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return SessionSummary{}, err
@@ -275,6 +283,7 @@ func (s *Service) EndSession(ctx context.Context, collegeID, teacherID, sessionI
 	if err := tx.Commit(); err != nil {
 		return SessionSummary{}, err
 	}
+	observability.ActiveSessions.Dec()
 
 	// Clean up Redis keys
 	_ = s.rdb.Del(ctx, fmt.Sprintf("session:%s:code", sessionID), fmt.Sprintf("session:%s:prev", sessionID))

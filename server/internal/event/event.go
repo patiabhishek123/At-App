@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"atapp/internal/observability"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -30,17 +31,28 @@ func NewKafkaEventBus(brokers []string) *KafkaEventBus {
 	}
 }
 
-// Publish serializes and writes a message to the specified Kafka topic.
+// Publish serializes and writes a message to the specified Kafka topic,
+// carrying the caller's trace context in message headers so a consumer can
+// continue the same trace.
 func (k *KafkaEventBus) Publish(ctx context.Context, topic string, key string, value interface{}) error {
+	ctx, span := observability.Tracer().Start(ctx, "event.publish "+topic)
+	defer span.End()
+
 	bytes, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("failed to marshal event value: %w", err)
 	}
 
+	headers := make([]kafka.Header, 0, 2)
+	for k, v := range observability.InjectTraceHeaders(ctx) {
+		headers = append(headers, kafka.Header{Key: k, Value: []byte(v)})
+	}
+
 	err = k.writer.WriteMessages(ctx, kafka.Message{
-		Topic: topic,
-		Key:   []byte(key),
-		Value: bytes,
+		Topic:   topic,
+		Key:     []byte(key),
+		Value:   bytes,
+		Headers: headers,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to write message to topic %s: %w", topic, err)

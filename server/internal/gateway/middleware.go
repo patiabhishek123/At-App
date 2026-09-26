@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"atapp/internal/auth"
+	"atapp/internal/observability"
 	"atapp/internal/utils"
 )
 
@@ -47,6 +48,8 @@ func AuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
 			ctx := context.WithValue(r.Context(), ContextKeyUserID, claims.UserID)
 			ctx = context.WithValue(ctx, ContextKeyRole, claims.Role)
 			ctx = context.WithValue(ctx, ContextKeyCollegeID, claims.CollegeID)
+
+			observability.SetRequestIdentity(ctx, claims.UserID, claims.Role, claims.CollegeID)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

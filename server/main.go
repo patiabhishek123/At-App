@@ -18,6 +18,7 @@ import (
 	"atapp/internal/event"
 	"atapp/internal/gateway"
 	"atapp/internal/notification"
+	"atapp/internal/observability"
 	"atapp/internal/reporting"
 	"atapp/internal/session"
 	"atapp/internal/tenant"
@@ -29,7 +30,7 @@ import (
 )
 
 func main() {
-	log.Println("Initializing AtApp Modular Monolith server...")
+	observability.Logger.Info("initializing AtApp modular monolith server")
 
 	// 1. Load config
 	cfg := config.Load()
@@ -50,9 +51,9 @@ func main() {
 	if err := db.RunMigrations(dbConn); err != nil {
 		log.Fatalf("Critical: database migration failed: %v", err)
 	}
-	log.Println("Database migrations applied")
+	observability.Logger.Info("database migrations applied")
 	defer dbConn.Close()
-	log.Println("Database connection pool established")
+	observability.Logger.Info("database connection pool established")
 
 	// 3. Connect to Redis
 	rdb, err := db.ConnectRedis(cfg.RedisAddr)
@@ -60,17 +61,17 @@ func main() {
 		log.Fatalf("Critical: Redis connection failed: %v", err)
 	}
 	defer rdb.Close()
-	log.Println("Redis connection established")
+	observability.Logger.Info("redis connection established")
 
 	// 4. Initialize Event Bus (Kafka/Redpanda)
 	brokers := cfg.KafkaBrokers
 	var eventBus event.EventBus = event.NewKafkaEventBus(brokers)
 	defer func() {
 		if err := eventBus.Close(); err != nil {
-			log.Printf("Error closing event bus: %v\n", err)
+			observability.Logger.Error("error closing event bus", "error", err)
 		}
 	}()
-	log.Printf("Event Bus (Kafka) initialized with brokers %v\n", brokers)
+	observability.Logger.Info("event bus initialized", "brokers", brokers)
 
 	// 5. Instantiate services
 	authService := auth.NewService(dbConn, cfg)
@@ -116,22 +117,23 @@ func main() {
 			log.Fatalf("Critical: failed to initialize FCM notifier: %v", err)
 		}
 		notifier = fcmNotifier
-		log.Println("Push notifications: using FCM")
+		observability.Logger.Info("push notifications: using FCM")
 	} else {
-		log.Println("Push notifications: FCM not configured, logging to console instead")
+		observability.Logger.Info("push notifications: FCM not configured, logging to console instead")
 	}
 	notificationConsumer := notification.NewConsumer(brokers, notifier, dbConn)
 	notificationConsumer.Start(consumerCtx)
 
 	// 8b. Start Background Data Pruning Loop
-	log.Printf("Raw verification signal retention: %s (checked every %s)", cfg.RawSignalRetention, cfg.RawSignalPruneInterval)
+	observability.Logger.Info("raw verification signal retention configured",
+		"retention", cfg.RawSignalRetention.String(), "check_interval", cfg.RawSignalPruneInterval.String())
 	go func() {
 		// Run initial prune
 		pruned, err := verifService.PruneRawVerificationData(context.Background(), cfg.RawSignalRetention)
 		if err != nil {
-			log.Printf("[Pruning Job] Error pruning raw verification data: %v", err)
+			observability.Logger.Error("pruning job failed", "error", err)
 		} else if pruned > 0 {
-			log.Printf("[Pruning Job] Successfully pruned %d verification attempt raw location details on startup", pruned)
+			observability.Logger.Info("pruning job completed on startup", "rows_pruned", pruned)
 		}
 
 		ticker := time.NewTicker(cfg.RawSignalPruneInterval)
@@ -143,20 +145,31 @@ func main() {
 			case <-ticker.C:
 				pruned, err := verifService.PruneRawVerificationData(context.Background(), cfg.RawSignalRetention)
 				if err != nil {
-					log.Printf("[Pruning Job] Error pruning raw verification data: %v", err)
+					observability.Logger.Error("pruning job failed", "error", err)
 				} else if pruned > 0 {
-					log.Printf("[Pruning Job] Successfully pruned %d verification attempt raw location details", pruned)
+					observability.Logger.Info("pruning job completed", "rows_pruned", pruned)
 				}
 			}
+		}
+	}()
+
+	// 7b. Initialize tracing (spans are exported to the structured logger).
+	shutdownTracing := observability.InitTracing("atapp")
+	defer func() {
+		if err := shutdownTracing(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
 		}
 	}()
 
 	// 8. Router and middlewares
 	r := chi.NewRouter()
 
-	r.Use(middleware.Logger)
+	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(observability.TracingMiddleware)
+	r.Use(observability.MetricsMiddleware)
+	r.Use(observability.RequestLogger)
 
 	// CORS configuration
 	allowedOrigins := make(map[string]bool, len(cfg.AllowedOrigins))
@@ -204,6 +217,11 @@ func main() {
 		_, _ = w.Write([]byte("ready"))
 	})
 
+	// Prometheus scrape endpoint. Unauthenticated like the probes above;
+	// restrict network access to it (e.g. cluster-internal only) at the
+	// infra layer in production.
+	r.Handle("/metrics", observability.MetricsHandler())
+
 	// 9. Register endpoints under /api/v1
 	authRateLimit := gateway.RateLimit(rdb, "auth", 10, time.Minute)
 	r.Route("/api/v1", func(r chi.Router) {
@@ -246,7 +264,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Gateway HTTP server listening on %s", serverAddr)
+		observability.Logger.Info("gateway HTTP server listening", "addr", serverAddr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Critical: Gateway server closed unexpectedly: %v", err)
 		}
@@ -257,12 +275,12 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
-	log.Println("Shutting down Gateway server gracefully...")
+	observability.Logger.Info("shutting down gateway server gracefully")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("Gateway shutdown failed: %v", err)
 	}
-	log.Println("Gateway server stopped cleanly")
+	observability.Logger.Info("gateway server stopped cleanly")
 }
