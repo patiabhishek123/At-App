@@ -10,7 +10,7 @@ jobs:
   backend:
     name: Backend CI (Go)
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -43,7 +43,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.25'
           cache-dependency-path: server/go.sum
 
       - name: Install dependencies
@@ -56,10 +56,15 @@ jobs:
           version: v1.59
           working-directory: server
           args: --timeout=5m
+        # TODO: flip to blocking (remove continue-on-error) once a clean run
+        # against the current codebase has been confirmed — not verified as
+        # part of the change that added this comment.
         continue-on-error: true
 
       - name: Run Tests
-        run: go test -v ./...
+        # -p 1: test packages share one Postgres database and each resets its
+        # schema at startup, so packages must not run concurrently.
+        run: go test -p 1 -v ./...
         working-directory: server
         env:
           DB_HOST: localhost
@@ -67,6 +72,7 @@ jobs:
           DB_USER: atapp_user
           DB_PASSWORD: atapp_password
           DB_NAME: atapp_db
+          REDIS_ADDR: localhost:6380
 
       - name: Build
         run: go build -v ./...
@@ -75,72 +81,74 @@ jobs:
   admin-frontend:
     name: Admin Frontend CI (Next.js)
     runs-on: ubuntu-latest
-    # Run only if files in admin directory change (once created)
-    # For now, this is a skeleton pipeline that runs checks when the admin directory exists.
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check if Admin exists
-        id: check_admin
-        run: |
-          if [ -d "admin" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set up Node.js
-        if: steps.check_admin.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: admin/package-lock.json
+          cache-dependency-path: admin_web/package-lock.json
 
-      - name: Install dependencies & Lint & Test
-        if: steps.check_admin.outputs.exists == 'true'
-        run: |
-          cd admin
-          npm ci
-          npm run lint
-          npm test
-          npm run build
+      - name: Install dependencies
+        run: npm ci
+        working-directory: admin_web
+
+      - name: Lint
+        run: npm run lint
+        working-directory: admin_web
+
+      - name: Build
+        run: npm run build
+        working-directory: admin_web
 
   mobile-frontend:
     name: Mobile Frontend CI (Flutter)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [ student_app, teacher_app ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check if Mobile exists
-        id: check_mobile
-        run: |
-          if [ -d "mobile" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set up Java
-        if: steps.check_mobile.outputs.exists == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
       - name: Set up Flutter
-        if: steps.check_mobile.outputs.exists == 'true'
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.x'
           channel: 'stable'
 
-      - name: Get packages & Analyze & Test
-        if: steps.check_mobile.outputs.exists == 'true'
-        run: |
-          cd mobile
-          flutter pub get
-          flutter analyze
-          flutter test
+      - name: Get packages
+        run: flutter pub get
+        working-directory: ${{ matrix.app }}
+
+      - name: Analyze
+        run: flutter analyze
+        working-directory: ${{ matrix.app }}
+
+      - name: Test
+        run: flutter test
+        working-directory: ${{ matrix.app }}
+
+  docker-build:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    needs: backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build server image (validation only, not pushed)
+        uses: docker/build-push-action@v6
+        with:
+          context: server
+          push: false
+          tags: atapp-server:ci

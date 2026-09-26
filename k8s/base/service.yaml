@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: atapp-server
+  labels:
+    app: atapp-server
+spec:
+  selector:
+    app: atapp-server
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

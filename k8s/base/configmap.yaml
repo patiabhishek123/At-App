@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atapp-server-config
+data:
+  APP_ENV: "production"
+  SERVER_PORT: "8080"
+  DB_HOST: "atapp-postgres"
+  DB_PORT: "5432"
+  DB_NAME: "atapp_db"
+  DB_SSLMODE: "require"
+  REDIS_ADDR: "atapp-redis:6379"
+  KAFKA_BROKERS: "atapp-redpanda:9092"
+  ALLOWED_ORIGINS: "https://app.example.com"
+  SMTP_HOST: ""
+  SMTP_PORT: "587"
+  SMTP_FROM: "no-reply@atapp.example.com"
+  FCM_PROJECT_ID: ""
+  RAW_SIGNAL_RETENTION: "24h"
+  RAW_SIGNAL_PRUNE_INTERVAL: "1h"

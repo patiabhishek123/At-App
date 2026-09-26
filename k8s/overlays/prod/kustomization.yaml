@@ -1,0 +1,63 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: atapp-prod
+
+resources:
+  - ../../base
+
+images:
+  # CI/CD should pin this to an immutable release tag (e.g. the git SHA) at
+  # deploy time via `kustomize edit set image atapp-server=<registry>/atapp-server:<sha>`
+  # rather than deploying "latest" to production.
+  - name: atapp-server
+    newName: atapp-server
+    newTag: latest
+
+replicas:
+  - name: atapp-server
+    count: 3
+
+patches:
+  - target:
+      kind: Deployment
+      name: atapp-server
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: atapp-server
+      spec:
+        template:
+          spec:
+            containers:
+              - name: atapp-server
+                resources:
+                  requests:
+                    cpu: 250m
+                    memory: 256Mi
+                  limits:
+                    cpu: 1000m
+                    memory: 512Mi
+  - target:
+      kind: ConfigMap
+      name: atapp-server-config
+    patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: atapp-server-config
+      data:
+        APP_ENV: production
+        ALLOWED_ORIGINS: "https://app.example.com"
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: atapp-server
+    patch: |-
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: atapp-server
+      spec:
+        minReplicas: 3
+        maxReplicas: 20

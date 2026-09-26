@@ -1,0 +1,24 @@
+# CPU-based autoscaling using the built-in metrics API (no extra components
+# required). AtApp also exposes Prometheus metrics at /metrics
+# (atapp_http_requests_total, atapp_http_request_duration_seconds,
+# atapp_active_sessions, atapp_checkins_total) — once a Prometheus Adapter
+# is installed, this can be extended with a custom-metrics target (e.g.
+# scale on request rate or active sessions) instead of/alongside CPU.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: atapp-server
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: atapp-server
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
